@@ -99,11 +99,22 @@ def extract_metadata(img_pil: Image.Image) -> PhotoMeta:
         logger.warning("Failed to parse EXIF: %s", e)
         return meta
 
-    # ── DateTimeOriginal ──────────────────────────────────────────────────
+    # ── DateTimeOriginal (with fallbacks) ────────────────────────────────
     exif_ifd = exif_dict.get("Exif", {})
     meta.datetime_original = _parse_datetime(
         exif_ifd.get(piexif.ExifIFD.DateTimeOriginal)
     )
+    # Fallback: DateTimeDigitized
+    if meta.datetime_original is None:
+        meta.datetime_original = _parse_datetime(
+            exif_ifd.get(piexif.ExifIFD.DateTimeDigitized)
+        )
+    # Fallback: DateTime (from 0th IFD)
+    if meta.datetime_original is None:
+        zeroth_ifd_dt = exif_dict.get("0th", {})
+        meta.datetime_original = _parse_datetime(
+            zeroth_ifd_dt.get(piexif.ImageIFD.DateTime)
+        )
 
     # ── Camera make / model ───────────────────────────────────────────────
     zeroth_ifd = exif_dict.get("0th", {})

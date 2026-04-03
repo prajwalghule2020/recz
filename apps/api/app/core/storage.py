@@ -6,10 +6,11 @@ from botocore.exceptions import ClientError
 from app.core.config import settings
 
 
-def _make_client():
+def _make_client(endpoint: str | None = None):
+    ep = endpoint or settings.minio_endpoint
     return boto3.client(
         "s3",
-        endpoint_url=f"http{'s' if settings.minio_secure else ''}://{settings.minio_endpoint}",
+        endpoint_url=f"http{'s' if settings.minio_secure else ''}://{ep}",
         aws_access_key_id=settings.minio_access_key,
         aws_secret_access_key=settings.minio_secret_key,
         config=Config(signature_version="s3v4"),
@@ -17,8 +18,12 @@ def _make_client():
     )
 
 
+# Internal client — used for uploads/downloads within Docker network
 _client = _make_client()
-    
+
+# Public client — used ONLY for generating presigned URLs the browser can reach
+_public_client = _make_client(settings.minio_public_endpoint)
+
 
 def ensure_bucket() -> None:
     """Create the raw-image bucket if it doesn't exist."""
@@ -48,8 +53,10 @@ def read_object_bytes(object_key: str) -> bytes:
 
 
 def get_presigned_url(object_key: str, expires_in: int = 3600) -> str:
-    return _client.generate_presigned_url(
+    """Generate a presigned URL using the PUBLIC endpoint so browser can reach it."""
+    return _public_client.generate_presigned_url(
         "get_object",
         Params={"Bucket": settings.minio_bucket, "Key": object_key},
         ExpiresIn=expires_in,
     )
+

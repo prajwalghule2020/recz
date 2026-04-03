@@ -27,3 +27,14 @@ def read_object_bytes(object_key: str) -> bytes:
     _client.download_fileobj(settings.minio_bucket, object_key, buf)
     buf.seek(0)
     return buf.read()
+
+
+def upload_object(object_key: str, data: bytes, content_type: str = "application/octet-stream") -> None:
+    """Upload bytes to MinIO."""
+    _client.upload_fileobj(
+        io.BytesIO(data),
+        settings.minio_bucket,
+        object_key,
+        ExtraArgs={"ContentType": content_type},
+    )
+

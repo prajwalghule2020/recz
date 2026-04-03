@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     # MinIO
     minio_endpoint: str = "localhost:9000"
+    minio_public_endpoint: str = "localhost:9000"  # endpoint the browser can reach
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
     minio_bucket: str = "face-ai-raw"

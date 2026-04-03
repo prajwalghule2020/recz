@@ -26,6 +26,7 @@ from stages.metadata import extract_metadata
 from storage.qdrant_store import upsert_faces, upsert_scene
 from storage.postgres_store import update_job_status, save_metadata, save_face_records
 from minio_client import read_object_bytes
+from stages.thumbnail import generate_thumbnail
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,12 @@ def process_image_pipeline(self, job_id: str, object_key: str, user_id: str, ima
                      photo_meta.datetime_original, photo_meta.gps_lat, photo_meta.gps_lon)
 
         # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        # Stage 5: Thumbnail generation
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        thumbnail_key = generate_thumbnail(img_pil.convert("RGB"), object_key)
+        logger.info("[5/5] Thumbnail generated → %s", thumbnail_key)
+
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         # Store results
         # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -113,9 +120,15 @@ def process_image_pipeline(self, job_id: str, object_key: str, user_id: str, ima
             qdrant_point_ids=face_point_ids,
         )
 
-        # Mark job done
-        update_job_status(job_id, "done", face_count=len(face_results))
+        # Mark job done (include thumbnail key)
+        update_job_status(job_id, "done", face_count=len(face_results), thumbnail_key=thumbnail_key)
         logger.info("Pipeline DONE  job=%s  faces=%d", job_id, len(face_results))
+
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        # Clustering is available manually via the /api/v1/cluster endpoints.
+        # Auto-triggering after every upload was causing stale IDs on the frontend
+        # because it deletes + recreates all person/event/place records each time.
+        # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     except Exception as exc:
         logger.exception("Pipeline FAILED  job=%s", job_id)
