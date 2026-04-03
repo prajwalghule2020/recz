@@ -119,3 +119,26 @@ async def get_job_results(job_id: str):
             "height": meta.height if meta else None,
         } if meta else None,
     }
+
+
+# ── Image URLs ─────────────────────────────────────────────────────────────────
+
+@router.get("/{job_id}/thumbnail", summary="Get presigned URL for thumbnail")
+async def get_thumbnail_url(job_id: str):
+    job = await db.processingjob.find_unique(where={"id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    key = job.thumbnailKey or job.objectKey
+    url = get_presigned_url(key)
+    return {"job_id": job_id, "url": url, "is_thumbnail": job.thumbnailKey is not None}
+
+
+@router.get("/{job_id}/image", summary="Get presigned URL for full image")
+async def get_full_image_url(job_id: str):
+    job = await db.processingjob.find_unique(where={"id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    url = get_presigned_url(job.objectKey)
+    return {"job_id": job_id, "url": url}

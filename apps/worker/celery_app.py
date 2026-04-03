@@ -7,7 +7,7 @@ app = Celery(
     "face_ai_worker",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["pipeline"],
+    include=["pipeline", "clustering_pipeline", "embedding_tasks"],
 )
 
 app.conf.update(

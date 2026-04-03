@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Python deps
 COPY apps/api/pyproject.toml .
 COPY apps/api/app/ ./app/
-RUN pip install --no-cache-dir -e .
+# TODO: Add --no-cache-dir for production builds
+RUN pip install -e .
 
 # Copy shared Prisma schema, swap JS generator → Python generator, then generate
 COPY packages/db/prisma/ ./prisma/

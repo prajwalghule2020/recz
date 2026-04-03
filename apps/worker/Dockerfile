@@ -35,7 +35,13 @@ app = insightface.app.FaceAnalysis(name='buffalo_l', providers=['CPUExecutionPro
 app.prepare(ctx_id=0, det_size=(640,640)); \
 print('buffalo_l downloaded and verified')"
 
+# Pre-download OpenCLIP ViT-B-16 weights during build
 ENV TORCH_HOME=/models/openclip
+RUN python -c "\
+import os; os.makedirs('/models/openclip', exist_ok=True); \
+import open_clip; \
+model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16', pretrained='laion2b_s34b_b88k'); \
+print('OpenCLIP ViT-B-16 downloaded and verified')"
 
 # Copy worker code
 COPY apps/worker/ .

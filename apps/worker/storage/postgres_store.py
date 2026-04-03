@@ -1,7 +1,9 @@
-"""Postgres storage for the worker — sync Prisma client (Celery tasks are sync)."""
+"""Postgres storage for the worker — async Prisma client wrapped for sync Celery tasks."""
 
+import asyncio
 import json
 import logging
+import sys
 import uuid
 from datetime import datetime, timezone
 
@@ -13,12 +15,25 @@ _db = None
 
 
 def _get_db() -> Prisma:
-    """Lazy sync Prisma client — created on first call."""
+    """Lazy Prisma client — created and connected on first call."""
     global _db
     if _db is None:
         _db = Prisma()
-        _db.connect()
+        # Celery replaces sys.stdout/stderr with LoggingProxy which lacks fileno().
+        # Prisma's query engine spawns a subprocess that needs real file descriptors.
+        # Temporarily restore the originals during connect.
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__
+        try:
+            asyncio.get_event_loop().run_until_complete(_db.connect())
+        finally:
+            sys.stdout, sys.stderr = old_out, old_err
     return _db
+
+
+def _run(coro):
+    """Run an async Prisma coroutine synchronously."""
+    return asyncio.get_event_loop().run_until_complete(coro)
 
 
 # ── Public functions ──────────────────────────────────────────────────────────
@@ -28,6 +43,7 @@ def update_job_status(
     status: str,
     face_count: int | None = None,
     error_msg: str | None = None,
+    thumbnail_key: str | None = None,
 ):
     """Update the processing job row."""
     db = _get_db()
@@ -39,18 +55,20 @@ def update_job_status(
         data["faceCount"] = face_count
     if error_msg is not None:
         data["errorMsg"] = error_msg[:2000]
+    if thumbnail_key is not None:
+        data["thumbnailKey"] = thumbnail_key
 
-    db.processingjob.update(
+    _run(db.processingjob.update(
         where={"id": job_id},
         data=data,
-    )
+    ))
     logger.info("Job %s → status=%s", job_id, status)
 
 
 def save_metadata(job_id: str, image_id: str, photo_meta):
     """Insert a photo_metadata row."""
     db = _get_db()
-    db.photometadata.create(
+    _run(db.photometadata.create(
         data={
             "jobId": job_id,
             "imageId": image_id,
@@ -62,7 +80,7 @@ def save_metadata(job_id: str, image_id: str, photo_meta):
             "width": photo_meta.width,
             "height": photo_meta.height,
         }
-    )
+    ))
     logger.info("Saved metadata for image_id=%s", image_id)
 
 
@@ -75,7 +93,7 @@ def save_face_records(
     """Insert face_record rows."""
     db = _get_db()
     for face, pid in zip(face_results, qdrant_point_ids):
-        db.facerecord.create(
+        _run(db.facerecord.create(
             data={
                 "jobId": job_id,
                 "imageId": image_id,
@@ -84,5 +102,5 @@ def save_face_records(
                 "detScore": face["det_score"],
                 "qdrantPointId": pid,
             }
-        )
+        ))
     logger.info("Saved %d face records for image_id=%s", len(face_results), image_id)
