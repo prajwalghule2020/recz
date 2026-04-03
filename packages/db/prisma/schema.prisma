@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Processing Jobs ──────────────────────────────────────────────────────────
+
+model ProcessingJob {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  status       String   @default("pending")
+  objectKey    String   @map("object_key")
+  thumbnailKey String?  @map("thumbnail_key")
+  faceCount    Int?     @map("face_count")
+  errorMsg     String?  @map("error_msg")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  metadata    PhotoMetadata?
+  faces       FaceRecord[]
+  eventPhotos EventPhoto[]
+  placePhotos PlacePhoto[]
+
+  @@index([userId])
+  @@map("processing_jobs")
+}
+
+// ─── Photo Metadata ───────────────────────────────────────────────────────────
+
+model PhotoMetadata {
+  id               String    @id @default(uuid())
+  jobId            String    @unique @map("job_id")
+  imageId          String    @map("image_id")
+  datetimeOriginal DateTime? @map("datetime_original")
+  gpsLat           Float?    @map("gps_lat")
+  gpsLon           Float?    @map("gps_lon")
+  cameraMake       String?   @map("camera_make")
+  cameraModel      String?   @map("camera_model")
+  width            Int?
+  height           Int?
+
+  job ProcessingJob @relation(fields: [jobId], references: [id])
+
+  @@index([imageId])
+  @@index([datetimeOriginal])
+  @@map("photo_metadata")
+}
+
+// ─── Face Records ─────────────────────────────────────────────────────────────
+
+model FaceRecord {
+  id            String  @id @default(uuid())
+  jobId         String  @map("job_id")
+  imageId       String  @map("image_id")
+  faceIndex     Int     @map("face_index")
+  bboxJson      String? @map("bbox_json")
+  detScore      Float?  @map("det_score")
+  qdrantPointId String? @map("qdrant_point_id")
+  personId      String? @map("person_id")
+
+  job    ProcessingJob @relation(fields: [jobId], references: [id])
+  person Person?       @relation(fields: [personId], references: [id])
+
+  @@index([jobId])
+  @@index([imageId])
+  @@index([personId])
+  @@map("face_records")
+}
+
+// ─── Person (face cluster) ────────────────────────────────────────────────────
+
+model Person {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String?
+  coverFaceId String?  @map("cover_face_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  faces FaceRecord[]
+
+  @@index([userId])
+  @@map("persons")
+}
+
+// ─── Event (temporal cluster) ─────────────────────────────────────────────────
+
+model Event {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  title        String?
+  startTime    DateTime @map("start_time")
+  endTime      DateTime @map("end_time")
+  coverImageId String?  @map("cover_image_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  photos EventPhoto[]
+
+  @@index([userId])
+  @@index([startTime])
+  @@map("events")
+}
+
+model EventPhoto {
+  id      String @id @default(uuid())
+  eventId String @map("event_id")
+  jobId   String @map("job_id")
+
+  event Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  job   ProcessingJob @relation(fields: [jobId], references: [id])
+
+  @@unique([eventId, jobId])
+  @@map("event_photos")
+}
+
+// ─── Place (geo cluster) ──────────────────────────────────────────────────────
+
+model Place {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  country   String?
+  lat       Float
+  lon       Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  photos PlacePhoto[]
+
+  @@index([userId])
+  @@map("places")
+}
+
+model PlacePhoto {
+  id      String @id @default(uuid())
+  placeId String @map("place_id")
+  jobId   String @map("job_id")
+
+  place Place         @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  job   ProcessingJob @relation(fields: [jobId], references: [id])
+
+  @@unique([placeId, jobId])
+  @@map("place_photos")
+}

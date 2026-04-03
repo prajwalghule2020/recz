@@ -1,0 +1,35 @@
+# face-ai-dev: local development environment (API + tooling)
+# ML-heavy deps (insightface, open_clip, onnxruntime) run inside Docker
+# on Linux where pre-built wheels are available.
+#
+# Usage:
+#   conda env create -f environment.yml
+#   conda activate face-ai
+#
+# Worker ML deps are installed inside apps/worker/Dockerfile (Linux only).
+
+name: face-ai
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - fastapi
+    - "uvicorn[standard]"
+    - "celery[redis]"
+    - Pillow
+    - piexif
+    - "sqlalchemy[asyncio]"
+    - asyncpg
+    - alembic
+    - boto3
+    - "qdrant-client"
+    - pydantic-settings
+    - python-multipart
+    - pytest
+    - httpx
+    - numpy
+    # onnxruntime — CPU only, for local testing without Docker
+    - onnxruntime
