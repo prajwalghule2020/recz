@@ -1,19 +1,24 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { fetchPeople, triggerClustering, type Person } from "@/lib/api";
+import { fetchPeople, triggerClustering, filterPhotos, type Person } from "@/lib/api";
 import PersonCard from "@/app/components/PersonCard";
 
 export default function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [clustering, setClustering] = useState(false);
+  const [photoCount, setPhotoCount] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchPeople();
       setPeople(data);
+      if (data.length === 0) {
+        const phData = await filterPhotos({ limit: 1 });
+        setPhotoCount(phData.total);
+      }
     } catch (e) {
       console.error("Failed to load people:", e);
     } finally {
@@ -42,7 +47,8 @@ export default function PeoplePage() {
         <div>
           <h1 className="page-title">People</h1>
           <p className="page-subtitle">
-            {people.length} {people.length === 1 ? "person" : "people"} detected · showing clusters with 3+ photos
+            {people.length} {people.length === 1 ? "person" : "people"} detected<br />
+            <span style={{ opacity: 0.6 }}>· showing clusters with 3+ photos</span>
           </p>
         </div>
         <button
@@ -61,8 +67,14 @@ export default function PeoplePage() {
         </div>
       ) : people.length === 0 ? (
         <div className="page-empty">
-          <span style={{ fontSize: 64, opacity: 0.3 }}>👥</span>
-          <p>No people detected yet. Upload photos with faces to get started.</p>
+          <span className={photoCount > 0 ? "animate-spin-slow" : ""} style={{ fontSize: 64, opacity: 0.3 }}>
+            {photoCount > 0 ? "⚙️" : "👥"}
+          </span>
+          <p style={{ marginTop: 16 }}>
+            {photoCount > 0 
+              ? "Analyzing your photos and forming clusters... This might take a few moments." 
+              : "No people detected yet. Upload photos with faces to get started."}
+          </p>
         </div>
       ) : (
         <div className="people-grid">

@@ -63,7 +63,7 @@ def run_face_clustering(self, user_id: str):
             if offset is None:
                 break
 
-        if len(points) < 2:
+        if len(points) < 3:
             logger.info("Not enough faces (%d) for clustering, skipping", len(points))
             return {"status": "skipped", "reason": "too_few_faces", "count": len(points)}
 
@@ -82,11 +82,28 @@ def run_face_clustering(self, user_id: str):
         # Delete old persons
         _run(db.person.delete_many(where={"userId": user_id}))
 
-        # Step 4: Create new Person records and assign faces
-        cluster_ids = set(labels) - {-1}  # exclude noise
-        person_map = {}  # cluster_id → person_id
+        # Step 4: Keep only clusters that appear across >2 unique photos
+        # This prevents tiny clusters and matches the UI/business rule.
+        cluster_to_points: dict[int, list] = defaultdict(list)
+        for point, label in zip(points, labels):
+            if label != -1:
+                cluster_to_points[int(label)].append(point)
 
-        for cluster_id in sorted(cluster_ids):
+        valid_cluster_ids: list[int] = []
+        skipped_small_clusters = 0
+        for cluster_id, cluster_points in cluster_to_points.items():
+            unique_job_ids = {
+                p.payload.get("job_id")
+                for p in cluster_points
+                if p.payload and p.payload.get("job_id")
+            }
+            if len(unique_job_ids) > 2:
+                valid_cluster_ids.append(cluster_id)
+            else:
+                skipped_small_clusters += 1
+
+        person_map = {}  # cluster_id → person_id
+        for cluster_id in sorted(valid_cluster_ids):
             person = _run(db.person.create(
                 data={
                     "userId": user_id,
@@ -98,12 +115,12 @@ def run_face_clustering(self, user_id: str):
         # Step 5: Assign each face to its person
         assigned = 0
         for point, label in zip(points, labels):
-            if label == -1:
+            if label == -1 or int(label) not in person_map:
                 continue  # noise — not assigned to any person
 
             # Find the FaceRecord by qdrant_point_id
             face_record = _run(db.facerecord.find_first(
-                where={"qdrantPointId": str(point.id)},
+                where={"qdrantPointId": str(point.id), "job": {"userId": user_id}},
             ))
             if face_record:
                 _run(db.facerecord.update(
@@ -115,7 +132,7 @@ def run_face_clustering(self, user_id: str):
         # Step 6: Set cover face for each person (first face in cluster)
         for cluster_id, person_id in person_map.items():
             first_face = _run(db.facerecord.find_first(
-                where={"personId": person_id},
+                where={"personId": person_id, "job": {"userId": user_id}},
                 order={"faceIndex": "asc"},
             ))
             if first_face:
@@ -133,6 +150,7 @@ def run_face_clustering(self, user_id: str):
             "persons_created": len(person_map),
             "faces_assigned": assigned,
             "total_faces": len(points),
+            "clusters_skipped_small": skipped_small_clusters,
         }
 
     except Exception as exc:

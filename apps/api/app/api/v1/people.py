@@ -22,7 +22,12 @@ async def list_people(
     """
     persons = await db.person.find_many(
         where={"userId": user_id},
-        include={"faces": {"include": {"job": {"include": {"metadata": True}}}}},
+        include={
+            "faces": {
+                "where": {"job": {"userId": user_id, "status": "done"}},
+                "include": {"job": {"include": {"metadata": True}}},
+            }
+        },
         order={"updatedAt": "desc"},
     )
 
@@ -80,17 +85,18 @@ async def get_person(
     user_id: str = Depends(get_current_user),
 ):
     """Get a person detail including all photos they appear in."""
-    person = await db.person.find_unique(
-        where={"id": person_id},
+    person = await db.person.find_first(
+        where={"id": person_id, "userId": user_id},
         include={
             "faces": {
+                "where": {"job": {"userId": user_id, "status": "done"}},
                 "include": {
                     "job": {"include": {"metadata": True}},
                 },
             },
         },
     )
-    if not person or person.userId != user_id:
+    if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
     photos = []
@@ -126,8 +132,8 @@ async def rename_person(
     user_id: str = Depends(get_current_user),
 ):
     """Update the display name for a person cluster."""
-    person = await db.person.find_unique(where={"id": person_id})
-    if not person or person.userId != user_id:
+    person = await db.person.find_first(where={"id": person_id, "userId": user_id})
+    if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
     updated = await db.person.update(
@@ -144,16 +150,16 @@ async def merge_persons(
     user_id: str = Depends(get_current_user),
 ):
     """Merge another person cluster into this one. Reassigns all faces."""
-    target = await db.person.find_unique(where={"id": person_id})
-    source = await db.person.find_unique(where={"id": merge_with_id})
-    if not target or target.userId != user_id:
+    target = await db.person.find_first(where={"id": person_id, "userId": user_id})
+    source = await db.person.find_first(where={"id": merge_with_id, "userId": user_id})
+    if not target:
         raise HTTPException(status_code=404, detail="Target person not found")
-    if not source or source.userId != user_id:
+    if not source:
         raise HTTPException(status_code=404, detail="Source person not found")
 
     # Reassign all source faces to target
     await db.facerecord.update_many(
-        where={"personId": merge_with_id},
+        where={"personId": merge_with_id, "job": {"userId": user_id}},
         data={"personId": person_id},
     )
 

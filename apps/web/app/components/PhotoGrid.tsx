@@ -14,10 +14,11 @@ interface Photo {
 interface Props {
   photos: Photo[];
   onPhotoClick?: (jobId: string) => void;
+  onPhotoDelete?: (jobId: string) => void;
   emptyMessage?: string;
 }
 
-export default function PhotoGrid({ photos, onPhotoClick, emptyMessage }: Props) {
+export default function PhotoGrid({ photos, onPhotoClick, onPhotoDelete, emptyMessage }: Props) {
   const [lightboxId, setLightboxId] = useState<string | null>(null);
 
   if (!photos.length) {
@@ -58,6 +59,20 @@ export default function PhotoGrid({ photos, onPhotoClick, emptyMessage }: Props)
               <div className="photo-grid-date">
                 {new Date(photo.datetime_original).toLocaleDateString()}
               </div>
+            )}
+            {onPhotoDelete && (
+              <button
+                className="photo-delete-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm("Are you sure you want to delete this photo? This action cannot be undone.")) {
+                    onPhotoDelete(photo.job_id);
+                  }
+                }}
+                title="Delete Photo"
+              >
+                🗑️
+              </button>
             )}
           </div>
         ))}

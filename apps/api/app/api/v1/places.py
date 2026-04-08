@@ -15,7 +15,7 @@ async def list_places(
     """Return all place clusters sorted by photo count descending."""
     places = await db.place.find_many(
         where={"userId": user_id},
-        include={"photos": True},
+        include={"photos": {"where": {"job": {"userId": user_id}}}},
         order={"createdAt": "desc"},
     )
 
@@ -44,17 +44,18 @@ async def get_place(
     user_id: str = Depends(get_current_user),
 ):
     """Get full place detail with all photos."""
-    place = await db.place.find_unique(
-        where={"id": place_id},
+    place = await db.place.find_first(
+        where={"id": place_id, "userId": user_id},
         include={
             "photos": {
+                "where": {"job": {"userId": user_id}},
                 "include": {
                     "job": {"include": {"metadata": True, "faces": True}},
                 },
             },
         },
     )
-    if not place or place.userId != user_id:
+    if not place:
         raise HTTPException(status_code=404, detail="Place not found")
 
     photos = []

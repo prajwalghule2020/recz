@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const NAV_ITEMS = [
   { href: "/", label: "Upload", icon: "📤" },
+  { href: "/photos", label: "Photos", icon: "🖼️" },
   { href: "/people", label: "People", icon: "👥" },
   { href: "/events", label: "Events", icon: "📅" },
   { href: "/places", label: "Places", icon: "📍" },

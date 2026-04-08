@@ -86,6 +86,16 @@ export default function PersonDetailPage() {
 
       <PhotoGrid
         photos={person.photos}
+        onPhotoDelete={async (jobId) => {
+          try {
+            const { deletePhoto } = await import("@/lib/api");
+            await deletePhoto(jobId);
+            setPerson(p => p ? { ...p, photos: p.photos.filter(x => x.job_id !== jobId), photo_count: p.photo_count - 1 } : null);
+          } catch (e) {
+            console.error("Failed to delete photo:", e);
+            alert("Failed to delete photo");
+          }
+        }}
         emptyMessage="No photos found for this person"
       />
     </div>

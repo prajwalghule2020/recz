@@ -15,7 +15,7 @@ async def list_events(
     """Return all event clusters sorted by start time descending."""
     events = await db.event.find_many(
         where={"userId": user_id},
-        include={"photos": True},
+        include={"photos": {"where": {"job": {"userId": user_id}}}},
         order={"startTime": "desc"},
     )
 
@@ -42,17 +42,18 @@ async def get_event(
     user_id: str = Depends(get_current_user),
 ):
     """Get full event detail with all photos."""
-    event = await db.event.find_unique(
-        where={"id": event_id},
+    event = await db.event.find_first(
+        where={"id": event_id, "userId": user_id},
         include={
             "photos": {
+                "where": {"job": {"userId": user_id}},
                 "include": {
                     "job": {"include": {"metadata": True, "faces": True}},
                 },
             },
         },
     )
-    if not event or event.userId != user_id:
+    if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
     photos = []

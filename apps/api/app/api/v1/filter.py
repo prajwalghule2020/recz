@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.prisma import db
 from app.core.auth import get_current_user
@@ -65,6 +65,9 @@ async def filter_photos(
 
     # Person filter — find jobs that have at least one face assigned to this person
     if person_id:
+        person = await db.person.find_first(where={"id": person_id, "userId": user_id})
+        if not person:
+            raise HTTPException(status_code=404, detail="Person not found")
         where["faces"] = {"some": {"personId": person_id}}
 
     jobs = await db.processingjob.find_many(

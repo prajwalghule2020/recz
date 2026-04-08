@@ -45,6 +45,14 @@ def upload_object(object_key: str, data: bytes, content_type: str = "application
     )
 
 
+def delete_object(object_key: str) -> None:
+    try:
+        _client.delete_object(Bucket=settings.minio_bucket, Key=object_key)
+    except ClientError as e:
+        # Ignore if it doesn't exist
+        pass
+
+
 def read_object_bytes(object_key: str) -> bytes:
     buf = io.BytesIO()
     _client.download_fileobj(settings.minio_bucket, object_key, buf)

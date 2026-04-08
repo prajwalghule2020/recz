@@ -195,6 +195,25 @@ export async function getFullImageUrl(jobId: string): Promise<string> {
   return data.url;
 }
 
+export async function fetchMyPhotos(params?: { status?: string; limit?: number; offset?: number }): Promise<{ total: number; photos: Photo[] }> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set("status", params.status);
+  if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  if (params?.offset !== undefined) query.set("offset", String(params.offset));
+
+  const url = `${API}/api/v1/images${query.toString() ? `?${query}` : ""}`;
+  const res = await authFetch(url);
+  if (!res.ok) throw new Error("Failed to fetch photos");
+  return res.json();
+}
+
+export async function deletePhoto(jobId: string): Promise<void> {
+  const res = await authFetch(`${API}/api/v1/images/${jobId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete photo");
+}
+
 // ── Filters ──────────────────────────────────────────────────────────────────
 
 export interface FilterParams {
