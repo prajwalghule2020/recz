@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import UploadZone from "./components/UploadZone";
-import { JobCard, useJobPoller, type JobStatus } from "./components/JobCard";
+import UploadZone from "../components/UploadZone";
+import { JobCard, useJobPoller, type JobStatus } from "../components/JobCard";
 
 interface Job {
   job_id: string;
@@ -15,8 +15,7 @@ interface Job {
   error_msg?: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const USER_ID = "demo-user";          // replace with real auth later
+const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export default function HomePage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -36,10 +35,14 @@ export default function HomePage() {
     try {
       const res = await fetch(`${API}/api/v1/images/upload`, {
         method: "POST",
-        headers: { "X-User-Id": USER_ID },
+        credentials: "include", // Send auth cookies
         body: form,
       });
       if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = "/auth/signin";
+          return;
+        }
         const err = await res.json().catch(() => ({ detail: "Upload failed" }));
         throw new Error(err.detail ?? "Upload failed");
       }

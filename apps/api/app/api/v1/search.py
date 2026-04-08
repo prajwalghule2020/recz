@@ -6,11 +6,12 @@ keeping this API container free of heavy ML dependencies.
 
 import logging
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from qdrant_client.models import FieldCondition, Filter, MatchValue, RecommendQuery
 
 from app.core.qdrant import FACE_COLLECTION, SCENE_COLLECTION, get_qdrant_client
 from app.core.prisma import db
+from app.core.auth import get_current_user
 from app.worker_client import celery_app
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ def _format_results(points):
 
 @router.post("/face", summary="Search for similar faces")
 async def search_face(
-    user_id: str = Query(..., description="User ID to scope the search"),
+    user_id: str = Depends(get_current_user),
     point_id: str | None = Query(None, description="Existing Qdrant point ID to search from"),
     limit: int = Query(20, ge=1, le=100),
     file: UploadFile | None = File(None, description="Upload a face image to search"),
@@ -89,7 +90,7 @@ async def search_face(
 
 @router.post("/similar", summary="Find visually similar images")
 async def search_similar(
-    user_id: str = Query(..., description="User ID to scope the search"),
+    user_id: str = Depends(get_current_user),
     image_id: str | None = Query(None, description="Existing image ID to find similar images for"),
     limit: int = Query(20, ge=1, le=100),
     file: UploadFile | None = File(None, description="Upload an image to search"),

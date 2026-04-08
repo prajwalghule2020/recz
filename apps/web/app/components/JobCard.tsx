@@ -128,7 +128,7 @@ interface JobListProps {
   onUpdate: (jobs: Job[]) => void;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export function useJobPoller(jobs: Job[], onUpdate: (jobs: Job[]) => void) {
   const ref = useRef(jobs);
@@ -143,7 +143,7 @@ export function useJobPoller(jobs: Job[], onUpdate: (jobs: Job[]) => void) {
         ref.current.map(async (j) => {
           if (j.status === "done" || j.status === "failed") return j;
           try {
-            const res = await fetch(`${API}/api/v1/images/${j.job_id}/status`);
+            const res = await fetch(`${API}/api/v1/images/${j.job_id}/status`, { credentials: 'include' });
             if (!res.ok) return j;
             const data = await res.json();
             return { ...j, ...data, status: data.status as JobStatus };

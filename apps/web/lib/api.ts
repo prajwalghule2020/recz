@@ -1,5 +1,6 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const USER_ID = "demo-user"; // replace with real auth later
+const API = process.env.NEXT_PUBLIC_API_URL ?? "";
+// When NEXT_PUBLIC_API_URL is empty, calls go through Next.js rewrites (see next.config.ts)
+// which proxies /api/v1/* to the FastAPI backend — this forwards cookies automatically.
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,23 +59,40 @@ export interface SearchResult {
   bbox?: number[];
 }
 
+// ── Authenticated fetch wrapper ──────────────────────────────────────────────
+
+async function authFetch(url: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(url, {
+    ...init,
+    credentials: "include", // Send cookies for session auth
+  });
+  if (res.status === 401) {
+    // Session expired — redirect to sign in
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/signin";
+    }
+    throw new Error("Not authenticated");
+  }
+  return res;
+}
+
 // ── People ───────────────────────────────────────────────────────────────────
 
 export async function fetchPeople(): Promise<Person[]> {
-  const res = await fetch(`${API}/api/v1/people?user_id=${USER_ID}`);
+  const res = await authFetch(`${API}/api/v1/people`);
   if (!res.ok) throw new Error("Failed to fetch people");
   const data = await res.json();
   return data.people;
 }
 
 export async function fetchPerson(personId: string): Promise<{ id: string; name: string | null; face_count: number; photo_count: number; photos: Photo[] }> {
-  const res = await fetch(`${API}/api/v1/people/${personId}`);
+  const res = await authFetch(`${API}/api/v1/people/${personId}`);
   if (!res.ok) throw new Error("Failed to fetch person");
   return res.json();
 }
 
 export async function renamePerson(personId: string, name: string): Promise<void> {
-  await fetch(`${API}/api/v1/people/${personId}`, {
+  await authFetch(`${API}/api/v1/people/${personId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
@@ -84,20 +102,20 @@ export async function renamePerson(personId: string, name: string): Promise<void
 // ── Events ───────────────────────────────────────────────────────────────────
 
 export async function fetchEvents(): Promise<EventSummary[]> {
-  const res = await fetch(`${API}/api/v1/events?user_id=${USER_ID}`);
+  const res = await authFetch(`${API}/api/v1/events`);
   if (!res.ok) throw new Error("Failed to fetch events");
   const data = await res.json();
   return data.events;
 }
 
 export async function fetchEvent(eventId: string): Promise<{ id: string; title: string | null; start_time: string; end_time: string; photo_count: number; photos: Photo[] }> {
-  const res = await fetch(`${API}/api/v1/events/${eventId}`);
+  const res = await authFetch(`${API}/api/v1/events/${eventId}`);
   if (!res.ok) throw new Error("Failed to fetch event");
   return res.json();
 }
 
 export async function renameEvent(eventId: string, title: string): Promise<void> {
-  await fetch(`${API}/api/v1/events/${eventId}`, {
+  await authFetch(`${API}/api/v1/events/${eventId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
@@ -107,14 +125,14 @@ export async function renameEvent(eventId: string, title: string): Promise<void>
 // ── Places ───────────────────────────────────────────────────────────────────
 
 export async function fetchPlaces(): Promise<PlaceSummary[]> {
-  const res = await fetch(`${API}/api/v1/places?user_id=${USER_ID}`);
+  const res = await authFetch(`${API}/api/v1/places`);
   if (!res.ok) throw new Error("Failed to fetch places");
   const data = await res.json();
   return data.places;
 }
 
 export async function fetchPlace(placeId: string): Promise<{ id: string; name: string; country: string | null; lat: number; lon: number; photo_count: number; photos: Photo[] }> {
-  const res = await fetch(`${API}/api/v1/places/${placeId}`);
+  const res = await authFetch(`${API}/api/v1/places/${placeId}`);
   if (!res.ok) throw new Error("Failed to fetch place");
   return res.json();
 }
@@ -122,7 +140,7 @@ export async function fetchPlace(placeId: string): Promise<{ id: string; name: s
 // ── Search ───────────────────────────────────────────────────────────────────
 
 export async function searchByFacePoint(pointId: string, limit = 20): Promise<SearchResult[]> {
-  const res = await fetch(`${API}/api/v1/search/face?user_id=${USER_ID}&point_id=${pointId}&limit=${limit}`, {
+  const res = await authFetch(`${API}/api/v1/search/face?point_id=${pointId}&limit=${limit}`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Face search failed");
@@ -133,7 +151,7 @@ export async function searchByFacePoint(pointId: string, limit = 20): Promise<Se
 export async function searchByFaceImage(file: File, limit = 20): Promise<SearchResult[]> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API}/api/v1/search/face?user_id=${USER_ID}&limit=${limit}`, {
+  const res = await authFetch(`${API}/api/v1/search/face?limit=${limit}`, {
     method: "POST",
     body: form,
   });
@@ -143,7 +161,7 @@ export async function searchByFaceImage(file: File, limit = 20): Promise<SearchR
 }
 
 export async function searchSimilarImages(imageId: string, limit = 20): Promise<SearchResult[]> {
-  const res = await fetch(`${API}/api/v1/search/similar?user_id=${USER_ID}&image_id=${imageId}&limit=${limit}`, {
+  const res = await authFetch(`${API}/api/v1/search/similar?image_id=${imageId}&limit=${limit}`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Similarity search failed");
@@ -154,7 +172,7 @@ export async function searchSimilarImages(imageId: string, limit = 20): Promise<
 // ── Clustering ───────────────────────────────────────────────────────────────
 
 export async function triggerClustering(type: "faces" | "events" | "places" | "all"): Promise<{ task_id: string }> {
-  const res = await fetch(`${API}/api/v1/cluster/${type}?user_id=${USER_ID}`, {
+  const res = await authFetch(`${API}/api/v1/cluster/${type}`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to trigger clustering");
@@ -164,14 +182,14 @@ export async function triggerClustering(type: "faces" | "events" | "places" | "a
 // ── Image URLs ───────────────────────────────────────────────────────────────
 
 export async function getThumbnailUrl(jobId: string): Promise<string> {
-  const res = await fetch(`${API}/api/v1/images/${jobId}/thumbnail`);
+  const res = await authFetch(`${API}/api/v1/images/${jobId}/thumbnail`);
   if (!res.ok) throw new Error("Failed to get thumbnail URL");
   const data = await res.json();
   return data.url;
 }
 
 export async function getFullImageUrl(jobId: string): Promise<string> {
-  const res = await fetch(`${API}/api/v1/images/${jobId}/image`);
+  const res = await authFetch(`${API}/api/v1/images/${jobId}/image`);
   if (!res.ok) throw new Error("Failed to get image URL");
   const data = await res.json();
   return data.url;
@@ -193,13 +211,13 @@ export interface FilterParams {
 }
 
 export async function filterPhotos(params: FilterParams): Promise<{ total: number; photos: Photo[] }> {
-  const query = new URLSearchParams({ user_id: USER_ID });
+  const query = new URLSearchParams();
   for (const [key, val] of Object.entries(params)) {
     if (val !== undefined && val !== null && val !== "") {
       query.set(key, String(val));
     }
   }
-  const res = await fetch(`${API}/api/v1/filter?${query}`);
+  const res = await authFetch(`${API}/api/v1/filter?${query}`);
   if (!res.ok) throw new Error("Filter failed");
   return res.json();
 }

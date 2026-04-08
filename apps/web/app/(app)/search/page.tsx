@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { searchByFaceImage, searchByFacePoint, searchSimilarImages, filterPhotos, type SearchResult, type Photo, type FilterParams } from "../../lib/api";
-import PhotoGrid from "../components/PhotoGrid";
-import ImageThumbnail from "../components/ImageThumbnail";
+import { searchByFaceImage, searchByFacePoint, searchSimilarImages, filterPhotos, type SearchResult, type Photo, type FilterParams } from "@/lib/api";
+import PhotoGrid from "@/app/components/PhotoGrid";
+import ImageThumbnail from "@/app/components/ImageThumbnail";
 
 type SearchMode = "face-upload" | "face-point" | "similar" | "filter";
 

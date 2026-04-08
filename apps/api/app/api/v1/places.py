@@ -1,15 +1,16 @@
 """Places API — list and detail for geo-grouped place clusters."""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.prisma import db
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/places", tags=["places"])
 
 
 @router.get("", summary="List all places for a user")
 async def list_places(
-    user_id: str = Query(..., description="User ID"),
+    user_id: str = Depends(get_current_user),
 ):
     """Return all place clusters sorted by photo count descending."""
     places = await db.place.find_many(
@@ -38,7 +39,10 @@ async def list_places(
 
 
 @router.get("/{place_id}", summary="Get place detail with all photos")
-async def get_place(place_id: str):
+async def get_place(
+    place_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """Get full place detail with all photos."""
     place = await db.place.find_unique(
         where={"id": place_id},
@@ -50,7 +54,7 @@ async def get_place(place_id: str):
             },
         },
     )
-    if not place:
+    if not place or place.userId != user_id:
         raise HTTPException(status_code=404, detail="Place not found")
 
     photos = []

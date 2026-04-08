@@ -3,16 +3,17 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.core.prisma import db
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/filter", tags=["filter"])
 
 
 @router.get("", summary="Filter photos by metadata")
 async def filter_photos(
-    user_id: str = Query(..., description="User ID"),
+    user_id: str = Depends(get_current_user),
     date_from: Optional[datetime] = Query(None, description="Start date (ISO 8601)"),
     date_to: Optional[datetime] = Query(None, description="End date (ISO 8601)"),
     lat_min: Optional[float] = Query(None, description="Min latitude"),

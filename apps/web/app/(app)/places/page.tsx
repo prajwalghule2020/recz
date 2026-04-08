@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { fetchPlaces, triggerClustering, type PlaceSummary } from "../../lib/api";
-import PlaceCard from "../components/PlaceCard";
+import { fetchPlaces, triggerClustering, type PlaceSummary } from "@/lib/api";
+import PlaceCard from "@/app/components/PlaceCard";
 
 export default function PlacesPage() {
   const [places, setPlaces] = useState<PlaceSummary[]>([]);

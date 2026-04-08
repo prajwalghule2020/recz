@@ -1,19 +1,25 @@
 """People API — CRUD for face-cluster Person records."""
 
 import json
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 
 from app.core.prisma import db
 from app.core.storage import get_presigned_url
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/people", tags=["people"])
 
 
 @router.get("", summary="List all people for a user")
 async def list_people(
-    user_id: str = Query(..., description="User ID"),
+    user_id: str = Depends(get_current_user),
+    min_photos: int = Query(default=2, ge=0, description="Only return people with more than this many photos"),
 ):
-    """Return all person clusters with face count and cover image."""
+    """Return all person clusters with face count and cover image.
+    
+    Only clusters with more than `min_photos` unique photos are returned
+    (default: 2, meaning at least 3 photos required).
+    """
     persons = await db.person.find_many(
         where={"userId": user_id},
         include={"faces": {"include": {"job": {"include": {"metadata": True}}}}},
@@ -22,34 +28,44 @@ async def list_people(
 
     results = []
     for person in persons:
-        face_count = len(person.faces) if person.faces else 0
-        # Use the cover face's job to get an image
+        if not person.faces:
+            continue
+
+        # Count unique photos (jobs), not raw face records — one photo can have
+        # multiple faces but should count as a single photo for this person.
+        unique_photo_ids = {f.jobId for f in person.faces if f.jobId}
+        photo_count = len(unique_photo_ids)
+
+        # Only surface clusters that have *more than* min_photos photos.
+        if photo_count <= min_photos:
+            continue
+
+        face_count = len(person.faces)
         cover_object_key = None
         cover_thumbnail_key = None
         cover_image_url = None
         cover_width = None
         cover_height = None
-        if person.faces:
-            cover_face = person.faces[0]
-            if cover_face.job:
-                cover_object_key = cover_face.job.objectKey
-                cover_thumbnail_key = cover_face.job.thumbnailKey
-                # Generate presigned URL for the cover image (full-size, since bbox is in original pixels)
-                cover_image_url = get_presigned_url(cover_face.job.objectKey)
-                # Get image dimensions for face crop calculation
-                if cover_face.job.metadata:
-                    cover_width = cover_face.job.metadata.width
-                    cover_height = cover_face.job.metadata.height
+
+        cover_face = person.faces[0]
+        if cover_face.job:
+            cover_object_key = cover_face.job.objectKey
+            cover_thumbnail_key = cover_face.job.thumbnailKey
+            cover_image_url = get_presigned_url(cover_face.job.objectKey)
+            if cover_face.job.metadata:
+                cover_width = cover_face.job.metadata.width
+                cover_height = cover_face.job.metadata.height
 
         results.append({
             "id": person.id,
             "name": person.name,
             "face_count": face_count,
+            "photo_count": photo_count,
             "cover_face_id": person.coverFaceId,
             "cover_object_key": cover_object_key,
             "cover_thumbnail_key": cover_thumbnail_key,
             "cover_image_url": cover_image_url,
-            "cover_bbox": json.loads(person.faces[0].bboxJson) if person.faces and person.faces[0].bboxJson else None,
+            "cover_bbox": json.loads(cover_face.bboxJson) if cover_face.bboxJson else None,
             "cover_width": cover_width,
             "cover_height": cover_height,
             "created_at": person.createdAt.isoformat(),
@@ -59,7 +75,10 @@ async def list_people(
 
 
 @router.get("/{person_id}", summary="Get a person with all their photos")
-async def get_person(person_id: str):
+async def get_person(
+    person_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """Get a person detail including all photos they appear in."""
     person = await db.person.find_unique(
         where={"id": person_id},
@@ -71,7 +90,7 @@ async def get_person(person_id: str):
             },
         },
     )
-    if not person:
+    if not person or person.userId != user_id:
         raise HTTPException(status_code=404, detail="Person not found")
 
     photos = []
@@ -104,10 +123,11 @@ async def get_person(person_id: str):
 async def rename_person(
     person_id: str,
     name: str = Body(..., embed=True),
+    user_id: str = Depends(get_current_user),
 ):
     """Update the display name for a person cluster."""
     person = await db.person.find_unique(where={"id": person_id})
-    if not person:
+    if not person or person.userId != user_id:
         raise HTTPException(status_code=404, detail="Person not found")
 
     updated = await db.person.update(
@@ -121,12 +141,15 @@ async def rename_person(
 async def merge_persons(
     person_id: str,
     merge_with_id: str = Body(..., embed=True, description="Person ID to merge into this one"),
+    user_id: str = Depends(get_current_user),
 ):
     """Merge another person cluster into this one. Reassigns all faces."""
     target = await db.person.find_unique(where={"id": person_id})
     source = await db.person.find_unique(where={"id": merge_with_id})
-    if not target or not source:
-        raise HTTPException(status_code=404, detail="One or both persons not found")
+    if not target or target.userId != user_id:
+        raise HTTPException(status_code=404, detail="Target person not found")
+    if not source or source.userId != user_id:
+        raise HTTPException(status_code=404, detail="Source person not found")
 
     # Reassign all source faces to target
     await db.facerecord.update_many(

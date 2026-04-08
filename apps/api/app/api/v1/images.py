@@ -1,144 +1,127 @@
+"""Upload API — handles image uploads and triggers the processing pipeline."""
+
 import uuid
-import json
-import mimetypes
-from typing import Annotated
+import logging
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Header
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
-from app.core.config import settings
-from app.core.storage import upload_object, get_presigned_url
 from app.core.prisma import db
-from app.worker_client import enqueue_pipeline
+from app.core.storage import upload_object
+from app.core.auth import get_current_user
+from app.worker_client import celery_app
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/images", tags=["images"])
 
-ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
-
-
-# ── Upload ─────────────────────────────────────────────────────────────────────
 
 @router.post("/upload", summary="Upload one or more images for processing")
 async def upload_images(
     files: list[UploadFile] = File(...),
-    x_user_id: Annotated[str | None, Header()] = None,
+    user_id: str = Depends(get_current_user),
 ):
-    if not x_user_id:
-        raise HTTPException(status_code=400, detail="X-User-Id header is required")
+    """Accept image files, store in MinIO, create job records, and enqueue tasks."""
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
 
-    results = []
+    jobs = []
     for file in files:
-        # Validate MIME
-        content_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or ""
-        if content_type not in ALLOWED_MIME:
-            raise HTTPException(
-                status_code=415,
-                detail=f"Unsupported file type '{content_type}'. Allowed: JPEG, PNG, WebP, HEIC",
-            )
+        if not file.content_type or not file.content_type.startswith("image/"):
+            continue
 
-        data = await file.read()
         image_id = str(uuid.uuid4())
-        ext = (file.filename or "image.jpg").rsplit(".", 1)[-1].lower()
-        object_key = f"{x_user_id}/{image_id}.{ext}"
+        ext = (file.filename or "img").rsplit(".", 1)[-1] if file.filename else "jpg"
+        object_key = f"{user_id}/{image_id}.{ext}"
+
+        # Read file content
+        content = await file.read()
 
         # Upload to MinIO
-        upload_object(object_key, data, content_type)
+        upload_object(object_key, content, file.content_type)
 
-        # Insert job row via Prisma
+        # Create job record
         job = await db.processingjob.create(
             data={
-                "userId": x_user_id,
-                "status": "pending",
+                "userId": user_id,
                 "objectKey": object_key,
+                "status": "queued",
             }
         )
 
         # Enqueue Celery task
-        enqueue_pipeline(job.id, object_key, x_user_id, image_id)
+        celery_app.send_task(
+            "worker.pipeline.process_image",
+            args=[job.id, user_id, image_id, object_key],
+        )
 
-        results.append({"job_id": job.id, "image_id": image_id, "status": "queued"})
+        jobs.append({"job_id": job.id, "image_id": image_id})
+        logger.info("Queued job %s for image %s (user=%s)", job.id, image_id, user_id)
 
-    return JSONResponse(content={"uploaded": len(results), "jobs": results})
+    if not jobs:
+        raise HTTPException(status_code=400, detail="No valid image files found")
+
+    return {"jobs": jobs, "total": len(jobs)}
 
 
-# ── Status ─────────────────────────────────────────────────────────────────────
-
-@router.get("/{job_id}/status", summary="Poll processing status for a job")
-async def get_job_status(job_id: str):
-    job = await db.processingjob.find_unique(where={"id": job_id})
-    if not job:
+@router.get("/{job_id}/status", summary="Check job processing status")
+async def get_job_status(
+    job_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Return the current processing status for a job."""
+    job = await db.processingjob.find_unique(
+        where={"id": job_id},
+        include={"metadata": True},
+    )
+    if not job or job.userId != user_id:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    meta = await db.photometadata.find_unique(where={"jobId": job_id})
-
-    return {
+    result = {
         "job_id": job.id,
         "status": job.status,
         "face_count": job.faceCount,
         "error_msg": job.errorMsg,
-        "gps_lat": meta.gpsLat if meta else None,
-        "gps_lon": meta.gpsLon if meta else None,
-        "datetime_original": meta.datetimeOriginal.isoformat() if meta and meta.datetimeOriginal else None,
+        "thumbnail_key": job.thumbnailKey,
     }
 
+    if job.metadata:
+        result.update({
+            "gps_lat": job.metadata.gpsLat,
+            "gps_lon": job.metadata.gpsLon,
+            "datetime_original": job.metadata.datetimeOriginal.isoformat() if job.metadata.datetimeOriginal else None,
+        })
 
-# ── Results ────────────────────────────────────────────────────────────────────
+    return result
 
-@router.get("/{job_id}/results", summary="Get full results for a completed job")
-async def get_job_results(job_id: str):
-    job = await db.processingjob.find_unique(
-        where={"id": job_id},
-        include={"metadata": True, "faces": True},
-    )
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    if job.status != "done":
-        raise HTTPException(status_code=202, detail=f"Job is not complete yet (status: {job.status})")
-
-    meta = job.metadata
-
-    return {
-        "job_id": job_id,
-        "face_count": job.faceCount,
-        "faces": [
-            {
-                "face_index": f.faceIndex,
-                "bbox": json.loads(f.bboxJson) if f.bboxJson else [],
-                "det_score": f.detScore,
-                "qdrant_point_id": f.qdrantPointId,
-            }
-            for f in (job.faces or [])
-        ],
-        "metadata": {
-            "datetime_original": meta.datetimeOriginal.isoformat() if meta and meta.datetimeOriginal else None,
-            "gps_lat": meta.gpsLat if meta else None,
-            "gps_lon": meta.gpsLon if meta else None,
-            "camera_make": meta.cameraMake if meta else None,
-            "camera_model": meta.cameraModel if meta else None,
-            "width": meta.width if meta else None,
-            "height": meta.height if meta else None,
-        } if meta else None,
-    }
-
-
-# ── Image URLs ─────────────────────────────────────────────────────────────────
 
 @router.get("/{job_id}/thumbnail", summary="Get presigned URL for thumbnail")
-async def get_thumbnail_url(job_id: str):
+async def get_thumbnail_url(
+    job_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Return a presigned URL for the job's thumbnail image."""
+    from app.core.storage import get_presigned_url
+
     job = await db.processingjob.find_unique(where={"id": job_id})
-    if not job:
+    if not job or job.userId != user_id:
         raise HTTPException(status_code=404, detail="Job not found")
 
     key = job.thumbnailKey or job.objectKey
     url = get_presigned_url(key)
-    return {"job_id": job_id, "url": url, "is_thumbnail": job.thumbnailKey is not None}
+    return {"url": url}
 
 
 @router.get("/{job_id}/image", summary="Get presigned URL for full image")
-async def get_full_image_url(job_id: str):
+async def get_image_url(
+    job_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Return a presigned URL for the full-resolution image."""
+    from app.core.storage import get_presigned_url
+
     job = await db.processingjob.find_unique(where={"id": job_id})
-    if not job:
+    if not job or job.userId != user_id:
         raise HTTPException(status_code=404, detail="Job not found")
 
     url = get_presigned_url(job.objectKey)
-    return {"job_id": job_id, "url": url}
+    return {"url": url}

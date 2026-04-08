@@ -65,8 +65,16 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=
+      - API_INTERNAL_URL=http://api:8000
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/faceai
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - BETTER_AUTH_URL=http://localhost:3000
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
     ports:
       - "3000:3000"
     depends_on:

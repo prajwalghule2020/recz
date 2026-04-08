@@ -7,6 +7,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Better Auth Tables ───────────────────────────────────────────────────────
+
+model User {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  sessions       Session[]
+  accounts       Account[]
+  processingJobs ProcessingJob[]
+  persons        Person[]
+  events         Event[]
+  places         Place[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  userId                String    @map("user_id")
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  idToken               String?   @map("id_token")
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("verification")
+}
+
 // ─── Processing Jobs ──────────────────────────────────────────────────────────
 
 model ProcessingJob {
@@ -20,6 +87,7 @@ model ProcessingJob {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  user        User           @relation(fields: [userId], references: [id])
   metadata    PhotoMetadata?
   faces       FaceRecord[]
   eventPhotos EventPhoto[]
@@ -81,6 +149,7 @@ model Person {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  user  User         @relation(fields: [userId], references: [id])
   faces FaceRecord[]
 
   @@index([userId])
@@ -98,6 +167,7 @@ model Event {
   coverImageId String?  @map("cover_image_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
+  user   User         @relation(fields: [userId], references: [id])
   photos EventPhoto[]
 
   @@index([userId])
@@ -128,6 +198,7 @@ model Place {
   lon       Float
   createdAt DateTime @default(now()) @map("created_at")
 
+  user   User         @relation(fields: [userId], references: [id])
   photos PlacePhoto[]
 
   @@index([userId])

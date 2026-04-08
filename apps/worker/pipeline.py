@@ -32,12 +32,12 @@ logger = logging.getLogger(__name__)
 
 
 @app.task(
-    name="worker.pipeline.process_image_pipeline",
+    name="worker.pipeline.process_image",
     bind=True,
     max_retries=2,
     default_retry_delay=30,
 )
-def process_image_pipeline(self, job_id: str, object_key: str, user_id: str, image_id: str):
+def process_image_pipeline(self, job_id: str, user_id: str, image_id: str, object_key: str):
     """Run the full 4-stage AI pipeline on a single uploaded image."""
 
     logger.info("Pipeline START  job=%s  key=%s", job_id, object_key)

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { fetchEvent, renameEvent, type Photo } from "../../../lib/api";
-import PhotoGrid from "../../components/PhotoGrid";
+import { fetchEvent, renameEvent, type Photo } from "@/lib/api";
+import PhotoGrid from "@/app/components/PhotoGrid";
 
 export default function EventDetailPage() {
   const params = useParams();

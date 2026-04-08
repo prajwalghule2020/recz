@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { fetchEvents, triggerClustering, type EventSummary } from "../../lib/api";
-import EventCard from "../components/EventCard";
+import { fetchEvents, triggerClustering, type EventSummary } from "@/lib/api";
+import EventCard from "@/app/components/EventCard";
 
 export default function EventsPage() {
   const [events, setEvents] = useState<EventSummary[]>([]);

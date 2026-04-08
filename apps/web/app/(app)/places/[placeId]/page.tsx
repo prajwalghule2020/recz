@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { fetchPlace, type Photo } from "../../../lib/api";
-import PhotoGrid from "../../components/PhotoGrid";
+import { fetchPlace, type Photo } from "@/lib/api";
+import PhotoGrid from "@/app/components/PhotoGrid";
 
 export default function PlaceDetailPage() {
   const params = useParams();

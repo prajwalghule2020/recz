@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { fetchPeople, triggerClustering, type Person } from "../../lib/api";
-import PersonCard from "../components/PersonCard";
+import { fetchPeople, triggerClustering, type Person } from "@/lib/api";
+import PersonCard from "@/app/components/PersonCard";
 
 export default function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
@@ -42,7 +42,7 @@ export default function PeoplePage() {
         <div>
           <h1 className="page-title">People</h1>
           <p className="page-subtitle">
-            {people.length} {people.length === 1 ? "person" : "people"} detected
+            {people.length} {people.length === 1 ? "person" : "people"} detected · showing clusters with 3+ photos
           </p>
         </div>
         <button

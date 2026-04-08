@@ -1,15 +1,16 @@
 """Events API — list and detail for auto-detected event clusters."""
 
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, Body
 
 from app.core.prisma import db
+from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.get("", summary="List all events for a user")
 async def list_events(
-    user_id: str = Query(..., description="User ID"),
+    user_id: str = Depends(get_current_user),
 ):
     """Return all event clusters sorted by start time descending."""
     events = await db.event.find_many(
@@ -36,7 +37,10 @@ async def list_events(
 
 
 @router.get("/{event_id}", summary="Get event detail with all photos")
-async def get_event(event_id: str):
+async def get_event(
+    event_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """Get full event detail with all photos."""
     event = await db.event.find_unique(
         where={"id": event_id},
@@ -48,7 +52,7 @@ async def get_event(event_id: str):
             },
         },
     )
-    if not event:
+    if not event or event.userId != user_id:
         raise HTTPException(status_code=404, detail="Event not found")
 
     photos = []
@@ -79,10 +83,11 @@ async def get_event(event_id: str):
 async def rename_event(
     event_id: str,
     title: str = Body(..., embed=True),
+    user_id: str = Depends(get_current_user),
 ):
     """Update the title for an event."""
     event = await db.event.find_unique(where={"id": event_id})
-    if not event:
+    if not event or event.userId != user_id:
         raise HTTPException(status_code=404, detail="Event not found")
 
     updated = await db.event.update(
