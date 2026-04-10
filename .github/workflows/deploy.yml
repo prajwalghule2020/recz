@@ -1,0 +1,86 @@
+name: Build, Push & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Step 1: Checkout Code ─────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Step 2: Login to Docker Hub ───────────────────────────────────────
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ── Step 3: Set up Docker Buildx (for faster builds) ──────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Step 4: Build & Push Next.js Web App ─────────────────────────────
+      - name: Build and push web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile.prod
+          push: true
+          tags: prajwalghule20/face-ai-web:latest
+          build-args: |
+            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Step 5: Build & Push FastAPI ──────────────────────────────────────
+      - name: Build and push api image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: prajwalghule20/face-ai-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Step 6: Build & Push Celery Worker ───────────────────────────────
+      - name: Build and push worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: true
+          tags: prajwalghule20/face-ai-worker:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Step 7: SSH into VM & Deploy ──────────────────────────────────────
+      - name: Deploy to GCP VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            # Go to deployment directory
+            cd ~/face-ai
+
+            # Copy latest production files from repo to VM
+            # (docker-compose.prod.yml and nginx.conf are already committed to git)
+
+            # Login to Docker Hub on the VM
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            # Pull the latest images built in the steps above
+            docker compose -f docker-compose.prod.yml pull
+
+            # Restart all services with zero-downtime rolling update
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            # Clean up old unused images to save disk space
+            docker image prune -f

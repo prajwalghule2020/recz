@@ -1,0 +1,47 @@
+FROM node:22-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# ── Stage 1: Install dependencies ─────────────────────────────────────────────
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
+COPY packages/db/ ./packages/db/
+COPY apps/web/ ./apps/web/
+RUN pnpm install --no-frozen-lockfile --filter web... --filter @repo/db
+
+# ── Stage 2: Build ─────────────────────────────────────────────────────────────
+FROM deps AS builder
+WORKDIR /app
+
+# Generate Prisma client
+RUN cd packages/db && npx prisma generate
+
+# Provide a dummy DATABASE_URL so Next.js build doesn't fail without a real DB.
+# The real DATABASE_URL is injected at runtime via docker-compose.prod.yml
+ENV DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN cd apps/web && pnpm build
+
+# ── Stage 3: Production Runner ─────────────────────────────────────────────────
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Add non-root user for security
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+# Copy standalone build output
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
+
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+CMD ["node", "apps/web/server.js"]
