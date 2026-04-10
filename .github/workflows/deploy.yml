@@ -59,7 +59,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── Step 7: SSH into VM & Deploy ──────────────────────────────────────
+      # ── Step 7: Copy deployment files to VM via SCP ───────────────────────
+      - name: Copy docker-compose and nginx config to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          source: "docker-compose.prod.yml,nginx.conf"
+          target: "~/face-ai/"
+
+      # ── Step 8: SSH into VM & Deploy ──────────────────────────────────────
       - name: Deploy to GCP VM
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -67,19 +77,15 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           script: |
-            # Go to deployment directory
             cd ~/face-ai
-
-            # Copy latest production files from repo to VM
-            # (docker-compose.prod.yml and nginx.conf are already committed to git)
 
             # Login to Docker Hub on the VM
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-            # Pull the latest images built in the steps above
+            # Pull the latest images built above
             docker compose -f docker-compose.prod.yml pull
 
-            # Restart all services with zero-downtime rolling update
+            # Restart all services
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Clean up old unused images to save disk space
