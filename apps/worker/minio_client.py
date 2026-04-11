@@ -8,9 +8,15 @@ from config import settings
 
 
 def _make_client():
+    ep = settings.minio_endpoint
+    if ep.startswith("http://"):
+        ep = ep[7:]
+    elif ep.startswith("https://"):
+        ep = ep[8:]
+        
     return boto3.client(
         "s3",
-        endpoint_url=f"http://{settings.minio_endpoint}",
+        endpoint_url=f"http://{ep}",
         aws_access_key_id=settings.minio_access_key,
         aws_secret_access_key=settings.minio_secret_key,
         config=Config(signature_version="s3v4"),

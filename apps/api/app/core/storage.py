@@ -9,6 +9,12 @@ from app.core.config import settings
 def _make_client(endpoint: str | None = None):
     ep = endpoint or settings.minio_endpoint
     
+    # Strip any accidental http:// or https:// from the environment variable
+    if ep.startswith("http://"):
+        ep = ep[7:]
+    elif ep.startswith("https://"):
+        ep = ep[8:]
+        
     # Internal _client passes endpoint=None and should always use HTTP over Docker network.
     # Public _client passes endpoint=minio_public_endpoint and uses HTTPS based on settings.
     protocol = "https" if (endpoint is not None and settings.minio_secure) else "http"
