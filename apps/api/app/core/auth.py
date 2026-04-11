@@ -17,7 +17,7 @@ async def get_current_user(request: Request) -> str:
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header[7:]
     else:
-        token = request.cookies.get("better-auth.session_token")
+        token = request.cookies.get("__Secure-better-auth.session_token") or request.cookies.get("better-auth.session_token")
 
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
