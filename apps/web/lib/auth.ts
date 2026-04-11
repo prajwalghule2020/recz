@@ -44,6 +44,7 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+    process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000",
   ],
 });
