@@ -10,7 +10,7 @@ from config import settings
 def _make_client():
     return boto3.client(
         "s3",
-        endpoint_url=f"http{'s' if settings.minio_secure else ''}://{settings.minio_endpoint}",
+        endpoint_url=f"http://{settings.minio_endpoint}",
         aws_access_key_id=settings.minio_access_key,
         aws_secret_access_key=settings.minio_secret_key,
         config=Config(signature_version="s3v4"),

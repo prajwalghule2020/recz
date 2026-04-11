@@ -8,9 +8,14 @@ from app.core.config import settings
 
 def _make_client(endpoint: str | None = None):
     ep = endpoint or settings.minio_endpoint
+    
+    # Internal _client passes endpoint=None and should always use HTTP over Docker network.
+    # Public _client passes endpoint=minio_public_endpoint and uses HTTPS based on settings.
+    protocol = "https" if (endpoint is not None and settings.minio_secure) else "http"
+    
     return boto3.client(
         "s3",
-        endpoint_url=f"http{'s' if settings.minio_secure else ''}://{ep}",
+        endpoint_url=f"{protocol}://{ep}",
         aws_access_key_id=settings.minio_access_key,
         aws_secret_access_key=settings.minio_secret_key,
         config=Config(signature_version="s3v4"),
