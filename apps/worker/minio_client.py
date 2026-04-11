@@ -15,6 +15,8 @@ def _make_client():
         aws_secret_access_key=settings.minio_secret_key,
         config=Config(signature_version="s3v4"),
         region_name="us-east-1",
+        use_ssl=False,
+        verify=False,
     )
 
 
