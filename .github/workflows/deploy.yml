@@ -59,7 +59,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── Step 7: Copy deployment files to VM via SCP ───────────────────────
+      # ── Step 7: Build & Push Migrate image ────────────────────────────────
+      # This is a tiny image containing only the Prisma schema + migrations
+      # Used to run `prisma migrate deploy` on the VM during each deployment
+      - name: Build and push migrate image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile.migrate
+          push: true
+          tags: prajwalghule20/face-ai-migrate:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Step 8: Copy deployment files to VM via SCP ───────────────────────
       - name: Copy docker-compose and nginx config to VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -69,7 +82,7 @@ jobs:
           source: "docker-compose.prod.yml,nginx.conf"
           target: "~/face-ai/"
 
-      # ── Step 8: SSH into VM & Deploy ──────────────────────────────────────
+      # ── Step 9: SSH into VM & Deploy ──────────────────────────────────────
       - name: Deploy to GCP VM
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -82,10 +95,22 @@ jobs:
             # Login to Docker Hub on the VM
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-            # Pull the latest images built above
+            # Pull the latest images
             docker compose -f docker-compose.prod.yml pull
 
-            # Restart all services
+            # ── Run DB Migrations BEFORE starting services ─────────────────
+            # Ensure postgres is running first
+            docker compose -f docker-compose.prod.yml up -d postgres
+            sleep 5
+
+            # Run migrations using the dedicated migrate image
+            source .env
+            docker run --rm \
+              --network face-ai_default \
+              -e DATABASE_URL="$DATABASE_URL" \
+              prajwalghule20/face-ai-migrate:latest
+
+            # ── Start all services ──────────────────────────────────────────
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
             # Clean up old unused images to save disk space
