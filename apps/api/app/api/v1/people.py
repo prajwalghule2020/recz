@@ -4,7 +4,6 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Body, Query
 
 from app.core.prisma import db
-from app.core.storage import get_presigned_url
 from app.core.auth import get_current_user
 
 router = APIRouter(prefix="/people", tags=["people"])
@@ -56,7 +55,7 @@ async def list_people(
         if cover_face.job:
             cover_object_key = cover_face.job.objectKey
             cover_thumbnail_key = cover_face.job.thumbnailKey
-            cover_image_url = get_presigned_url(cover_face.job.objectKey)
+            cover_image_url = f"/api/v1/images/{cover_face.job.id}/image/content"
             if cover_face.job.metadata:
                 cover_width = cover_face.job.metadata.width
                 cover_height = cover_face.job.metadata.height

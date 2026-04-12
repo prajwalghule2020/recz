@@ -2,8 +2,11 @@
 
 import uuid
 import logging
+import mimetypes
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response
+from botocore.exceptions import ClientError
 
 from app.core.prisma import db
 from app.core.storage import upload_object
@@ -13,6 +16,23 @@ from app.worker_client import celery_app
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/images", tags=["images"])
+
+
+def _guess_image_media_type(object_key: str) -> str:
+    guessed, _ = mimetypes.guess_type(object_key)
+    return guessed or "application/octet-stream"
+
+
+def _read_object_or_404(object_key: str) -> bytes:
+    from app.core.storage import read_object_bytes
+
+    try:
+        return read_object_bytes(object_key)
+    except ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        if code in {"404", "NoSuchKey", "NoSuchBucket"}:
+            raise HTTPException(status_code=404, detail="Image object not found")
+        raise
 
 
 @router.post("/upload", summary="Upload one or more images for processing")
@@ -134,37 +154,71 @@ async def get_job_status(
     return result
 
 
-@router.get("/{job_id}/thumbnail", summary="Get presigned URL for thumbnail")
+@router.get("/{job_id}/thumbnail", summary="Get thumbnail URL")
 async def get_thumbnail_url(
     job_id: str,
     user_id: str = Depends(get_current_user),
 ):
-    """Return a presigned URL for the job's thumbnail image."""
-    from app.core.storage import get_presigned_url
+    """Return an authenticated proxy URL for the job's thumbnail image."""
 
+    job = await db.processingjob.find_unique(where={"id": job_id})
+    if not job or job.userId != user_id:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    url = f"/api/v1/images/{job.id}/thumbnail/content"
+    return {"url": url}
+
+
+@router.get("/{job_id}/image", summary="Get full image URL")
+async def get_image_url(
+    job_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Return an authenticated proxy URL for the full-resolution image."""
+
+    job = await db.processingjob.find_unique(where={"id": job_id})
+    if not job or job.userId != user_id:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    url = f"/api/v1/images/{job.id}/image/content"
+    return {"url": url}
+
+
+@router.get("/{job_id}/thumbnail/content", summary="Serve thumbnail image bytes")
+async def get_thumbnail_content(
+    job_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Serve thumbnail bytes from MinIO via API to avoid brittle signed public URLs."""
     job = await db.processingjob.find_unique(where={"id": job_id})
     if not job or job.userId != user_id:
         raise HTTPException(status_code=404, detail="Job not found")
 
     key = job.thumbnailKey or job.objectKey
-    url = get_presigned_url(key)
-    return {"url": url}
+    blob = _read_object_or_404(key)
+    return Response(
+        content=blob,
+        media_type=_guess_image_media_type(key),
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
-@router.get("/{job_id}/image", summary="Get presigned URL for full image")
-async def get_image_url(
+@router.get("/{job_id}/image/content", summary="Serve full image bytes")
+async def get_image_content(
     job_id: str,
     user_id: str = Depends(get_current_user),
 ):
-    """Return a presigned URL for the full-resolution image."""
-    from app.core.storage import get_presigned_url
-
+    """Serve full image bytes from MinIO via API to avoid brittle signed public URLs."""
     job = await db.processingjob.find_unique(where={"id": job_id})
     if not job or job.userId != user_id:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    url = get_presigned_url(job.objectKey)
-    return {"url": url}
+    blob = _read_object_or_404(job.objectKey)
+    return Response(
+        content=blob,
+        media_type=_guess_image_media_type(job.objectKey),
+        headers={"Cache-Control": "private, max-age=120"},
+    )
 
 
 @router.delete("/{job_id}", summary="Delete a photo and all associated data")
