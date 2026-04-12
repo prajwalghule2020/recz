@@ -19,6 +19,7 @@ def _make_client(endpoint: str | None = None):
     # Public _client passes endpoint=minio_public_endpoint and uses HTTPS based on settings.
     protocol = "https" if (endpoint is not None and settings.minio_secure) else "http"
     
+    # Boto3 explicitly needs use_ssl to match protocol, otherwise botocore will rewrite it.
     return boto3.client(
         "s3",
         endpoint_url=f"{protocol}://{ep}",

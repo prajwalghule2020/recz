@@ -9,11 +9,14 @@ from config import settings
 
 def _make_client():
     ep = settings.minio_endpoint
+    
+    # Strip accidental schema from env var
     if ep.startswith("http://"):
         ep = ep[7:]
     elif ep.startswith("https://"):
         ep = ep[8:]
         
+    # Explicitly enforce HTTP (use_ssl=False) to stop botocore rewriting to HTTPS
     return boto3.client(
         "s3",
         endpoint_url=f"http://{ep}",
