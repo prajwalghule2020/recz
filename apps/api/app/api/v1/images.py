@@ -6,7 +6,6 @@ import mimetypes
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
-from botocore.exceptions import ClientError
 
 from app.core.prisma import db
 from app.core.storage import upload_object
@@ -28,8 +27,11 @@ def _read_object_or_404(object_key: str) -> bytes:
 
     try:
         return read_object_bytes(object_key)
-    except ClientError as exc:
-        code = str(exc.response.get("Error", {}).get("Code", ""))
+    except Exception as exc:
+        response = getattr(exc, "response", None)
+        code = ""
+        if isinstance(response, dict):
+            code = str(response.get("Error", {}).get("Code", ""))
         if code in {"404", "NoSuchKey", "NoSuchBucket"}:
             raise HTTPException(status_code=404, detail="Image object not found")
         raise

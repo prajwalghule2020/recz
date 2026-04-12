@@ -113,5 +113,36 @@ jobs:
             # ── Start all services ──────────────────────────────────────────
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
+            # ── Verify critical services are healthy (fail fast with logs) ──
+            API_CID=$(docker compose -f docker-compose.prod.yml ps -q api)
+            WEB_CID=$(docker compose -f docker-compose.prod.yml ps -q web)
+
+            if [ -z "$API_CID" ] || [ -z "$WEB_CID" ]; then
+              echo "api/web container IDs not found"
+              docker compose -f docker-compose.prod.yml ps
+              docker compose -f docker-compose.prod.yml logs --tail=200 api web nginx
+              exit 1
+            fi
+
+            for i in $(seq 1 24); do
+              API_HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$API_CID" || true)
+              WEB_STATE=$(docker inspect --format='{{.State.Status}}' "$WEB_CID" || true)
+
+              echo "Health check [$i/24] api=$API_HEALTH web=$WEB_STATE"
+
+              if [ "$API_HEALTH" = "healthy" ] && [ "$WEB_STATE" = "running" ]; then
+                break
+              fi
+
+              if [ "$i" -eq 24 ]; then
+                echo "Deployment health check failed"
+                docker compose -f docker-compose.prod.yml ps
+                docker compose -f docker-compose.prod.yml logs --tail=300 api web nginx
+                exit 1
+              fi
+
+              sleep 5
+            done
+
             # Clean up old unused images to save disk space
             docker image prune -f
