@@ -112,7 +112,9 @@ services:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - MINIO_BUCKET=${MINIO_BUCKET:-face-ai-raw}
-      - MINIO_SECURE=${MINIO_SECURE:-false}
+      # Worker talks to MinIO over the internal Docker network (HTTP, no TLS).
+      # Keep this forced to false even if public MinIO URLs are HTTPS.
+      - MINIO_SECURE=false
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - INSIGHTFACE_HOME=/models/insightface
