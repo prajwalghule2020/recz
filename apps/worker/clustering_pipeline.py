@@ -63,7 +63,7 @@ def run_face_clustering(self, user_id: str):
             if offset is None:
                 break
 
-        if len(points) < 3:
+        if len(points) < 2:
             logger.info("Not enough faces (%d) for clustering, skipping", len(points))
             return {"status": "skipped", "reason": "too_few_faces", "count": len(points)}
 
@@ -82,8 +82,8 @@ def run_face_clustering(self, user_id: str):
         # Delete old persons
         _run(db.person.delete_many(where={"userId": user_id}))
 
-        # Step 4: Keep only clusters that appear across >2 unique photos
-        # This prevents tiny clusters and matches the UI/business rule.
+        # Step 4: Keep only clusters that appear across >1 unique photo
+        # This avoids single-photo noise while surfacing practical person groups.
         cluster_to_points: dict[int, list] = defaultdict(list)
         for point, label in zip(points, labels):
             if label != -1:
@@ -97,7 +97,7 @@ def run_face_clustering(self, user_id: str):
                 for p in cluster_points
                 if p.payload and p.payload.get("job_id")
             }
-            if len(unique_job_ids) > 2:
+            if len(unique_job_ids) > 1:
                 valid_cluster_ids.append(cluster_id)
             else:
                 skipped_small_clusters += 1

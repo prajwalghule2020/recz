@@ -12,12 +12,12 @@ router = APIRouter(prefix="/people", tags=["people"])
 @router.get("", summary="List all people for a user")
 async def list_people(
     user_id: str = Depends(get_current_user),
-    min_photos: int = Query(default=2, ge=0, description="Only return people with more than this many photos"),
+    min_photos: int = Query(default=1, ge=0, description="Only return people with more than this many unique photos"),
 ):
     """Return all person clusters with face count and cover image.
     
     Only clusters with more than `min_photos` unique photos are returned
-    (default: 2, meaning at least 3 photos required).
+    (default: 1, meaning at least 2 photos required).
     """
     persons = await db.person.find_many(
         where={"userId": user_id},

@@ -78,8 +78,8 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
 
 // ── People ───────────────────────────────────────────────────────────────────
 
-export async function fetchPeople(): Promise<Person[]> {
-  const res = await authFetch(`${API}/api/v1/people`);
+export async function fetchPeople(minPhotos = 1): Promise<Person[]> {
+  const res = await authFetch(`${API}/api/v1/people?min_photos=${minPhotos}`);
   if (!res.ok) throw new Error("Failed to fetch people");
   const data = await res.json();
   return data.people;
