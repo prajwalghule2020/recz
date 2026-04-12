@@ -113,6 +113,10 @@ jobs:
             # ── Start all services ──────────────────────────────────────────
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
 
+            # Force-recreate nginx so upstream DNS/socket state is fresh after
+            # api/web container recreation during deploy.
+            docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
+
             # ── Verify critical services are healthy (fail fast with logs) ──
             API_CID=$(docker compose -f docker-compose.prod.yml ps -q api)
             WEB_CID=$(docker compose -f docker-compose.prod.yml ps -q web)
@@ -127,10 +131,15 @@ jobs:
             for i in $(seq 1 24); do
               API_HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$API_CID" || true)
               WEB_STATE=$(docker inspect --format='{{.State.Status}}' "$WEB_CID" || true)
+              NGINX_TO_API="no"
 
-              echo "Health check [$i/24] api=$API_HEALTH web=$WEB_STATE"
+              if docker compose -f docker-compose.prod.yml exec -T nginx sh -lc 'wget -qO- http://api:8000/healthz >/dev/null'; then
+                NGINX_TO_API="yes"
+              fi
 
-              if [ "$API_HEALTH" = "healthy" ] && [ "$WEB_STATE" = "running" ]; then
+              echo "Health check [$i/24] api=$API_HEALTH web=$WEB_STATE nginx_to_api=$NGINX_TO_API"
+
+              if [ "$API_HEALTH" = "healthy" ] && [ "$WEB_STATE" = "running" ] && [ "$NGINX_TO_API" = "yes" ]; then
                 break
               fi
 
