@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import appLogo from "@public/logo.svg";
+import Image from "next/image";
 
 const NAV_ITEMS = [
   { href: "/", label: "Upload", icon: "📤" },
@@ -30,7 +32,9 @@ export default function Sidebar() {
   return (
     <nav className="sidebar">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🧠</div>
+        <div className="sidebar-logo-icon" style={{ background: "#fff", borderRadius: "9999px" }}>
+          <Image src={appLogo} alt="Face-AI Logo" width={24} height={24} className="h-6 w-6 object-contain" />
+        </div>
         <span className="sidebar-logo-text">Face-AI</span>
       </div>
 

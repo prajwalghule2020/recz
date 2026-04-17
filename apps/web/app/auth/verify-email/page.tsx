@@ -4,21 +4,13 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
+import { OtpVerification1 } from "@/components/ui/modern-stunning-otp-verification";
 
 function VerifyEmailContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -26,6 +18,7 @@ function VerifyEmailContent() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
+      setErrorMessage("Missing verification token.");
       return;
     }
 
@@ -34,7 +27,9 @@ function VerifyEmailContent() {
       .then((res) => {
         if (res.error) {
           setStatus("error");
-          toast.error(res.error.message || "Verification failed");
+          const message = res.error.message || "Verification failed";
+          setErrorMessage(message);
+          toast.error(message);
         } else {
           setStatus("success");
           toast.success("Email verified successfully!");
@@ -42,83 +37,40 @@ function VerifyEmailContent() {
       })
       .catch(() => {
         setStatus("error");
+        setErrorMessage("Something went wrong while verifying your email.");
       });
   }, [token]);
 
-  if (status === "loading") {
-    return (
-      <Card className="border-[var(--border)] bg-[var(--surface)]">
-        <CardContent className="flex flex-col items-center gap-4 p-8">
-          <Spinner className="h-8 w-8" />
-          <p className="text-sm text-[var(--text-muted)]">
-            Verifying your email…
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <Card className="border-[var(--border)] bg-[var(--surface)]">
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl text-[var(--error)]">
-            Verification Failed
-          </CardTitle>
-          <CardDescription className="text-[var(--text-muted)]">
-            The verification link is invalid or has expired.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            variant="outline"
-            className="w-full border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] hover:bg-[var(--surface-3)]"
-            onClick={() => router.push("/auth/signin")}
-          >
-            Go to Sign In
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="border-[var(--border)] bg-[var(--surface)]">
-      <CardHeader className="text-center">
-        <CardTitle className="text-xl text-[var(--success)]">
-          Email Verified! ✓
-        </CardTitle>
-        <CardDescription className="text-[var(--text-muted)]">
-          Your email has been verified. You can now sign in.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button
-          className="w-full"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--accent), var(--accent-2))",
-          }}
-          onClick={() => router.push("/")}
-        >
-          Go to Dashboard
-        </Button>
-      </CardContent>
-    </Card>
+    <OtpVerification1
+      status={status}
+      title={status === "success" ? "Email Verified" : undefined}
+      description={
+        status === "success"
+          ? "Your email has been verified successfully."
+          : undefined
+      }
+      errorMessage={errorMessage}
+      primaryActionLabel={
+        status === "loading"
+          ? "Verifying..."
+          : status === "success"
+            ? "Go to Dashboard"
+            : "Go to Sign In"
+      }
+      onPrimaryAction={() => {
+        if (status === "loading") {
+          return;
+        }
+        router.push(status === "success" ? "/" : "/auth/signin");
+      }}
+    />
   );
 }
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense
-      fallback={
-        <Card className="border-[var(--border)] bg-[var(--surface)]">
-          <CardContent className="flex items-center justify-center p-8">
-            <Spinner className="h-6 w-6" />
-          </CardContent>
-        </Card>
-      }
-    >
+    <Suspense fallback={<OtpVerification1 status="loading" primaryActionLabel="Verifying..." onPrimaryAction={() => {}} />}>
       <VerifyEmailContent />
     </Suspense>
   );
