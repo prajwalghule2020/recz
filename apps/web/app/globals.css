@@ -10,6 +10,7 @@
 @import '../styles/custom-swiper.css';
 @import '../styles/number-animation.css';
 @import '../styles/lenis.css';
+@import '../styles/app-dashboard.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 

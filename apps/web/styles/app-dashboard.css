@@ -1,0 +1,952 @@
+/*
+ * Scoped UI system for authenticated app pages (photos, people, events, places, search).
+ * Keeps dashboard visuals aligned with the landing theme without affecting marketing routes.
+ */
+
+.app-shell {
+  --bg: #f9fafb;
+  --surface: #fcfcfd;
+  --surface-2: #f4f5f8;
+  --surface-3: #eaeceb;
+  --border: #dfe4eb;
+  --border-hover: #cfd6df;
+  --accent: #7c31f6;
+  --accent-2: #a585ff;
+  --accent-glow: rgba(124, 49, 246, 0.14);
+  --text: #1a1a1c;
+  --text-muted: rgba(26, 26, 28, 0.62);
+  --success: #16a34a;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --sidebar-w: 236px;
+
+  min-height: 100vh;
+  display: flex;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dark .app-shell {
+  --bg: #13171e;
+  --surface: #181d26;
+  --surface-2: #1f252f;
+  --surface-3: #2a333e;
+  --border: #2a333e;
+  --border-hover: #303b49;
+  --accent: #a585ff;
+  --accent-2: #83e7ee;
+  --accent-glow: rgba(165, 133, 255, 0.18);
+  --text: #fcfcfc;
+  --text-muted: rgba(252, 252, 252, 0.62);
+  --success: #4ade80;
+  --error: #f87171;
+  --warning: #fbbf24;
+}
+
+.app-shell a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell .app-main {
+  flex: 1;
+  min-height: 100vh;
+  margin-left: var(--sidebar-w);
+  overflow-y: auto;
+  background:
+    radial-gradient(720px 380px at -12% -8%, rgba(124, 49, 246, 0.08), transparent 58%),
+    var(--bg);
+}
+
+.dark .app-shell .app-main {
+  background:
+    radial-gradient(780px 420px at -10% -12%, rgba(165, 133, 255, 0.13), transparent 62%),
+    var(--bg);
+}
+
+.app-shell .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-w);
+  height: 100vh;
+  padding: 20px 12px;
+  border-right: 1px solid var(--border);
+  background: rgba(252, 252, 253, 0.86);
+  backdrop-filter: blur(14px);
+}
+
+.dark .app-shell .sidebar {
+  background: rgba(24, 29, 38, 0.88);
+}
+
+.app-shell .sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  padding: 8px 12px;
+}
+
+.app-shell .sidebar-logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+
+.app-shell .sidebar-logo-text {
+  margin: 0;
+  letter-spacing: -0.02em;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.app-shell .sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-shell .sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.app-shell .sidebar-link:hover {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.app-shell .sidebar-link-active {
+  border-color: rgba(124, 49, 246, 0.26);
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.dark .app-shell .sidebar-link-active {
+  border-color: rgba(165, 133, 255, 0.36);
+}
+
+.app-shell .sidebar-icon {
+  font-size: 1.1rem;
+}
+
+.app-shell .sidebar-label {
+  white-space: nowrap;
+}
+
+.app-shell .sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  padding: 12px;
+}
+
+.app-shell .sidebar-version {
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.app-shell .page-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.app-shell .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.app-shell .page-title {
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-size: 1.55rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.app-shell .page-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.app-shell .page-loading,
+.app-shell .page-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 84px 24px;
+}
+
+.app-shell .btn-primary,
+.app-shell .btn-secondary {
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.app-shell .btn-primary {
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+.app-shell .btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.app-shell .btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.app-shell .btn-secondary {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.app-shell .btn-secondary:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.app-shell .input-text,
+.app-shell .input-file {
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.app-shell .input-text {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 10px;
+  outline: none;
+  padding: 9px 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-shell .input-text:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124, 49, 246, 0.14);
+}
+
+.dark .app-shell .input-text:focus {
+  box-shadow: 0 0 0 3px rgba(165, 133, 255, 0.2);
+}
+
+.app-shell .input-file {
+  width: 100%;
+  min-width: 190px;
+  color: var(--text-muted);
+}
+
+.app-shell .people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}
+
+.app-shell .person-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  padding: 20px 12px;
+  transition: all 0.25s ease;
+}
+
+.app-shell .person-card:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 34px rgba(28, 34, 43, 0.12);
+}
+
+.dark .app-shell .person-card:hover {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+}
+
+.app-shell .person-card-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 12px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.app-shell .person-card-placeholder,
+.app-shell .face-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  opacity: 0.4;
+  font-size: 28px;
+}
+
+.app-shell .person-card-name {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.app-shell .person-card-count {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.app-shell .events-list,
+.app-shell .places-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-shell .event-card,
+.app-shell .place-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  padding: 16px 20px;
+  transition: all 0.25s ease;
+}
+
+.app-shell .place-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-shell .event-card:hover,
+.app-shell .place-card:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  transform: translateX(4px);
+}
+
+.app-shell .event-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-shell .event-card-icon,
+.app-shell .place-card-icon {
+  flex-shrink: 0;
+  font-size: 1.28rem;
+}
+
+.app-shell .place-card-info {
+  flex: 1;
+}
+
+.app-shell .event-card-title,
+.app-shell .place-card-name {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.app-shell .event-card-date,
+.app-shell .place-card-country {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.app-shell .event-card-count,
+.app-shell .place-card-count {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.app-shell .photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.app-shell .photo-grid-item {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.app-shell .photo-grid-item:hover {
+  border-color: var(--accent);
+  transform: scale(1.03);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2);
+}
+
+.app-shell .photo-grid-item .img-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-shell .photo-grid-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border-radius: 20px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.app-shell .photo-grid-date {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.68rem;
+}
+
+.app-shell .photo-delete-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.app-shell .photo-delete-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(239, 68, 68, 0.9);
+  border-color: rgba(239, 68, 68, 0.95);
+}
+
+.app-shell .photo-grid-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 24px;
+}
+
+.app-shell .img-thumb {
+  display: block;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.app-shell .img-thumb-loading,
+.app-shell .img-thumb-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 80px;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.app-shell .search-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.app-shell .search-tab {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px 16px;
+  font-size: 0.83rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.app-shell .search-tab:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.app-shell .search-tab-active {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.app-shell .search-input-area {
+  margin-bottom: 16px;
+}
+
+.app-shell .search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-shell .search-row .input-text {
+  flex: 1;
+}
+
+.app-shell .search-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.app-shell .search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-shell .search-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.app-shell .search-error {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--error);
+  margin: 12px 0;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+
+.app-shell .search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.app-shell .search-result-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  aspect-ratio: 1;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.app-shell .search-result-card:hover {
+  border-color: var(--accent);
+  transform: scale(1.03);
+}
+
+.app-shell .search-result-card .img-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-shell .search-result-meta {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 8px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+}
+
+.app-shell .search-result-score {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.app-shell .lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(8px);
+  animation: lightbox-fade-in 0.2s ease;
+}
+
+@keyframes lightbox-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.app-shell .lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(12px);
+}
+
+.app-shell .lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.1);
+}
+
+.app-shell .lightbox-counter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.app-shell .lightbox-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(12px);
+}
+
+.app-shell .lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.app-shell .lightbox-nav-prev {
+  left: 16px;
+}
+
+.app-shell .lightbox-nav-next {
+  right: 16px;
+}
+
+.app-shell .lightbox-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: calc(100vw - 120px);
+  max-height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.app-shell .lightbox-image {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-drag: none;
+  object-fit: contain;
+}
+
+.app-shell .lightbox-loading,
+.app-shell .lightbox-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+}
+
+.app-shell .lightbox-toolbar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(20, 20, 30, 0.75);
+  backdrop-filter: blur(16px);
+  padding: 6px 12px;
+  transform: translateX(-50%);
+}
+
+.app-shell .lightbox-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.app-shell .lightbox-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.app-shell .lightbox-zoom-level {
+  min-width: 40px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.app-shell .lightbox-tool-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.app-shell .app-main::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-shell .app-main::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.app-shell .app-main::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 49, 246, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 12px rgba(124, 49, 246, 0);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-shell .animate-float-up {
+  animation: float-up 0.5s both;
+}
+
+.app-shell .animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+.app-shell .animate-spin-slow {
+  animation: spin-slow 1.5s linear infinite;
+}
+
+@media (max-width: 1024px) {
+  .app-shell .search-filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    --sidebar-w: 68px;
+  }
+
+  .app-shell .sidebar {
+    width: var(--sidebar-w);
+    padding: 16px 8px;
+  }
+
+  .app-shell .sidebar-logo-text,
+  .app-shell .sidebar-label,
+  .app-shell .sidebar-version {
+    display: none;
+  }
+
+  .app-shell .sidebar-logo {
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .app-shell .sidebar-link {
+    justify-content: center;
+    padding: 12px 8px;
+  }
+
+  .app-shell .page-container {
+    padding: 24px 16px;
+  }
+
+  .app-shell .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+
+  .app-shell .search-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .app-shell .search-row .btn-primary,
+  .app-shell .search-row .btn-secondary {
+    width: 100%;
+  }
+
+  .app-shell .lightbox-image-container {
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 160px);
+  }
+}
+
+@media (max-width: 560px) {
+  .app-shell .search-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell .photo-grid,
+  .app-shell .search-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell .people-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell .lightbox-nav {
+    width: 42px;
+    height: 42px;
+    font-size: 24px;
+  }
+
+  .app-shell .lightbox-toolbar {
+    width: calc(100vw - 28px);
+    justify-content: center;
+  }
+}
