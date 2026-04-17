@@ -9,9 +9,12 @@ description = "Face-AI Celery worker — AI processing + clustering pipeline"
 requires-python = ">=3.11"
 dependencies = [
     "celery[redis]>=5.3",
+    # CPU-only ONNX runtime – avoids pulling onnxruntime-gpu
     "onnxruntime>=1.17",
     "insightface>=0.7.3",
     "open_clip_torch>=2.24",
+    # torch / torchvision are installed separately from the CPU index
+    # (see Dockerfile) so these are declared here only for metadata.
     "torch>=2.2",
     "torchvision>=0.17",
     "Pillow>=10.0",
