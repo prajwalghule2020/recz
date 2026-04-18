@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon, SquarePenIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { fetchEvent, renameEvent, type Photo } from "@/lib/api";
@@ -43,7 +44,7 @@ export default function EventDetailPage() {
     return (
       <div className="page-container">
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading…</p>
         </div>
       </div>
@@ -77,7 +78,10 @@ export default function EventDetailPage() {
             </div>
           ) : (
             <h1 className="page-title" onClick={() => setEditing(true)} style={{ cursor: "pointer" }}>
-              {event.title ?? `${formatDate(event.start_time)}`} ✏️
+              <span className="inline-flex items-center gap-2">
+                {event.title ?? `${formatDate(event.start_time)}`}
+                <SquarePenIcon className="h-4 w-4 text-(--text-muted)" aria-hidden="true" />
+              </span>
             </h1>
           )}
           <p className="page-subtitle">

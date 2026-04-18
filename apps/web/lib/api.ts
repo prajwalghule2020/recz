@@ -59,6 +59,11 @@ export interface SearchResult {
   bbox?: number[];
 }
 
+export interface UploadJob {
+  job_id: string;
+  image_id: string;
+}
+
 // ── Authenticated fetch wrapper ──────────────────────────────────────────────
 
 async function authFetch(url: string, init?: RequestInit): Promise<Response> {
@@ -212,6 +217,37 @@ export async function deletePhoto(jobId: string): Promise<void> {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete photo");
+}
+
+export async function uploadImages(files: File[]): Promise<{ jobs: UploadJob[]; total: number }> {
+  if (!files.length) {
+    throw new Error("No files selected");
+  }
+
+  const form = new FormData();
+  for (const file of files) {
+    form.append("files", file);
+  }
+
+  const res = await authFetch(`${API}/api/v1/images/upload`, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!res.ok) {
+    let detail = "Failed to upload images";
+    try {
+      const data = await res.json();
+      if (typeof data?.detail === "string") {
+        detail = data.detail;
+      }
+    } catch {
+      // Keep default error message when response is not JSON.
+    }
+    throw new Error(detail);
+  }
+
+  return res.json();
 }
 
 // ── Filters ──────────────────────────────────────────────────────────────────

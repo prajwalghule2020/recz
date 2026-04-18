@@ -1,5 +1,6 @@
 "use client";
 
+import { UserIcon } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
@@ -24,7 +25,7 @@ export default function FaceAvatar({ imageUrl, bbox, imgWidth, imgHeight, size =
         className="face-avatar-placeholder"
         style={{ width: size, height: size }}
       >
-        👤
+        <UserIcon className="h-7 w-7 text-(--text-muted)" aria-hidden="true" />
       </div>
     );
   }

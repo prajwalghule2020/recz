@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDaysIcon, CameraIcon } from "lucide-react";
 import Link from "next/link";
 import type { EventSummary } from "../../lib/api";
 
@@ -22,7 +23,9 @@ export default function EventCard({ event }: Props) {
   return (
     <Link href={`/events/${event.id}`} className="event-card animate-float-up">
       <div className="event-card-header">
-        <div className="event-card-icon">📅</div>
+        <div className="event-card-icon" aria-hidden="true">
+          <CalendarDaysIcon className="h-5 w-5" />
+        </div>
         <div>
           <h3 className="event-card-title">
             {event.title ?? formatDateRange(event.start_time, event.end_time)}
@@ -31,8 +34,9 @@ export default function EventCard({ event }: Props) {
             {formatDateRange(event.start_time, event.end_time)}
           </p>
         </div>
-        <div className="event-card-count">
-          {event.photo_count} 📷
+        <div className="event-card-count flex items-center gap-1">
+          <CameraIcon className="h-4 w-4" aria-hidden="true" />
+          <span>{event.photo_count}</span>
         </div>
       </div>
     </Link>

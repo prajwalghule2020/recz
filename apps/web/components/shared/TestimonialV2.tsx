@@ -44,11 +44,11 @@ const testimonials = [
 
 const TestimonialV2 = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentTestimonial, setCurrentTestimonial] = useState(testimonials[0]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const quoteRef = useRef<HTMLHeadingElement>(null);
   const nameRef = useRef<HTMLHeadingElement>(null);
   const positionRef = useRef<HTMLParagraphElement>(null);
+  const currentTestimonial = testimonials[currentIndex];
 
   // Function to get avatar image for a specific position
   const getAvatarImage = (index: number) => {
@@ -65,7 +65,6 @@ const TestimonialV2 = () => {
   // Function to update testimonial content with animation
   const updateTestimonial = useCallback(() => {
     const t = testimonials[currentIndex];
-    setCurrentTestimonial(t);
 
     // Animate quote
     if (quoteRef.current) {

@@ -124,6 +124,12 @@ const IMAGES = [
 // Helper for linear interpolation
 const lerp = (start: number, end: number, t: number) => start * (1 - t) + end * t;
 
+// Deterministic pseudo-random generator to keep render pure.
+const seededUnit = (index: number, seed: number) => {
+    const value = Math.sin((index + 1) * 12.9898 + seed * 78.233) * 43758.5453;
+    return value - Math.floor(value);
+};
+
 interface IntroAnimationProps {
     className?: string;
 }
@@ -326,10 +332,10 @@ export default function IntroAnimation({ className = "" }: IntroAnimationProps) 
 
     // --- Random Scatter Positions ---
     const scatterPositions = useMemo(() => {
-        return IMAGES.map(() => ({
-            x: (Math.random() - 0.5) * 1500,
-            y: (Math.random() - 0.5) * 1000,
-            rotation: (Math.random() - 0.5) * 180,
+        return IMAGES.map((_, index) => ({
+            x: (seededUnit(index, 1) - 0.5) * 1500,
+            y: (seededUnit(index, 2) - 0.5) * 1000,
+            rotation: (seededUnit(index, 3) - 0.5) * 180,
             scale: 0.6,
             opacity: 0,
         }));
@@ -355,7 +361,13 @@ export default function IntroAnimation({ className = "" }: IntroAnimationProps) 
     useEffect(() => {
         if (isRevealComplete) return;
         if (introPhase === "circle" && morphValue >= 0.995) {
-            setIsRevealComplete(true);
+            const completeTimer = window.setTimeout(() => {
+                setIsRevealComplete(true);
+            }, 0);
+
+            return () => {
+                window.clearTimeout(completeTimer);
+            };
         }
     }, [introPhase, isRevealComplete, morphValue]);
 

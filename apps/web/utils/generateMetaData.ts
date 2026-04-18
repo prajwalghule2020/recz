@@ -1,19 +1,20 @@
 import type { Metadata } from 'next';
 
-export const DEFAULT_URL = 'https://next-saas-next.vercel.app/';
-export const DEFAULT_TITLE = 'NextSaaS - Software, SaaS & Startup Tailwind Template';
+export const DEFAULT_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+export const NORMALIZED_DEFAULT_URL = DEFAULT_URL.endsWith('/') ? DEFAULT_URL : `${DEFAULT_URL}/`;
+export const DEFAULT_TITLE = 'Face AI - Intelligent Photo Search';
 export const DEFAULT_DESCRIPTION =
-  'NextSaaS - the ultimate collection of 38+ premium HTML templates for SaaS businesses and startups. Built with Tailwind CSS, featuring responsive design, authentication flows, pricing pages, and modern UI components. Perfect for web applications and digital products.';
-export const DEFAULT_IMAGE_URL = 'https://images.prismic.io/staticmania/aPD-K55xUNkB2D2X_og-image.jpg';
+  'Face AI helps you organize and search your photos by people, places, and events with AI-powered recognition and semantic search.';
+export const DEFAULT_IMAGE_URL = `${NORMALIZED_DEFAULT_URL}logo.svg`;
 
 const defaultMetadata: Metadata = {
-  metadataBase: new URL(DEFAULT_URL),
+  metadataBase: new URL(NORMALIZED_DEFAULT_URL),
   title: DEFAULT_TITLE,
   description: DEFAULT_DESCRIPTION,
   openGraph: {
     type: 'website',
-    siteName: 'NextSaaS',
-    url: DEFAULT_URL,
+    siteName: 'Face AI',
+    url: NORMALIZED_DEFAULT_URL,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
     images: [{ url: DEFAULT_IMAGE_URL, width: 1200, height: 630 }],

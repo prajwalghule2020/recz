@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon, SquarePenIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { fetchPerson, renamePerson, type Photo } from "@/lib/api";
@@ -40,7 +41,7 @@ export default function PersonDetailPage() {
     return (
       <div className="page-container">
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading…</p>
         </div>
       </div>
@@ -75,7 +76,10 @@ export default function PersonDetailPage() {
             </div>
           ) : (
             <h1 className="page-title" onClick={() => setEditing(true)} style={{ cursor: "pointer" }}>
-              {person.name ?? "Unknown Person"} ✏️
+              <span className="inline-flex items-center gap-2">
+                {person.name ?? "Unknown Person"}
+                <SquarePenIcon className="h-4 w-4 text-(--text-muted)" aria-hidden="true" />
+              </span>
             </h1>
           )}
           <p className="page-subtitle">

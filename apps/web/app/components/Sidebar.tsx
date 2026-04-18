@@ -12,17 +12,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CalendarDaysIcon,
+  ImageIcon as PhotosIcon,
+  MapPinIcon,
+  SearchIcon,
+  UploadIcon,
+  UsersIcon,
+  type LucideIcon,
+} from "lucide-react";
 import appLogo from "@public/logo.svg";
 import Image from "next/image";
 
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
 const NAV_ITEMS = [
-  { href: "/", label: "Upload", icon: "📤" },
-  { href: "/photos", label: "Photos", icon: "🖼️" },
-  { href: "/people", label: "People", icon: "👥" },
-  { href: "/events", label: "Events", icon: "📅" },
-  { href: "/places", label: "Places", icon: "📍" },
-  { href: "/search", label: "Search", icon: "🔍" },
-];
+  { href: "/upload", label: "Upload", icon: UploadIcon },
+  { href: "/photos", label: "Photos", icon: PhotosIcon },
+  { href: "/people", label: "People", icon: UsersIcon },
+  { href: "/events", label: "Events", icon: CalendarDaysIcon },
+  { href: "/places", label: "Places", icon: MapPinIcon },
+  { href: "/search", label: "Search", icon: SearchIcon },
+] as NavItem[];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -51,7 +66,9 @@ export default function Sidebar() {
               href={item.href}
               className={`sidebar-link ${isActive ? "sidebar-link-active" : ""}`}
             >
-              <span className="sidebar-icon">{item.icon}</span>
+              <span className="sidebar-icon">
+                <item.icon className="h-[18px] w-[18px]" aria-hidden="true" />
+              </span>
               <span className="sidebar-label">{item.label}</span>
             </Link>
           );
@@ -97,6 +114,7 @@ export default function Sidebar() {
             <DropdownMenuContent
               align="start"
               side="top"
+              sideOffset={8}
               className="w-56 border-[var(--border)] bg-[var(--surface)]"
             >
               <DropdownMenuItem

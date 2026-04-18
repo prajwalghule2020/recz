@@ -1,5 +1,6 @@
 "use client";
 
+import { ImageOffIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getThumbnailUrl } from "../../lib/api";
 
@@ -35,7 +36,7 @@ export default function ImageThumbnail({ jobId, alt, className, onClick }: Props
   if (error || !src) {
     return (
       <div className={`img-thumb img-thumb-error ${className ?? ""}`}>
-        <span style={{ fontSize: 20 }}>🖼️</span>
+        <ImageOffIcon className="h-5 w-5 text-(--text-muted)" aria-hidden="true" />
       </div>
     );
   }

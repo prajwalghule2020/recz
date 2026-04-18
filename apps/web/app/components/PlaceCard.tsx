@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPinIcon } from "lucide-react";
 import Link from "next/link";
 import type { PlaceSummary } from "../../lib/api";
 
@@ -10,7 +11,9 @@ interface Props {
 export default function PlaceCard({ place }: Props) {
   return (
     <Link href={`/places/${place.id}`} className="place-card animate-float-up">
-      <div className="place-card-icon">📍</div>
+      <div className="place-card-icon" aria-hidden="true">
+        <MapPinIcon className="h-5 w-5" />
+      </div>
       <div className="place-card-info">
         <h3 className="place-card-name">{place.name}</h3>
         <p className="place-card-country">{place.country ?? ""}</p>

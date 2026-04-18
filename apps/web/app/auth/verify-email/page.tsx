@@ -14,11 +14,10 @@ function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const missingTokenMessage = "Missing verification token.";
 
   useEffect(() => {
     if (!token) {
-      setStatus("error");
-      setErrorMessage("Missing verification token.");
       return;
     }
 
@@ -41,28 +40,31 @@ function VerifyEmailContent() {
       });
   }, [token]);
 
+  const effectiveStatus = token ? status : "error";
+  const effectiveErrorMessage = token ? errorMessage : missingTokenMessage;
+
   return (
     <OtpVerification1
-      status={status}
-      title={status === "success" ? "Email Verified" : undefined}
+      status={effectiveStatus}
+      title={effectiveStatus === "success" ? "Email Verified" : undefined}
       description={
-        status === "success"
+        effectiveStatus === "success"
           ? "Your email has been verified successfully."
           : undefined
       }
-      errorMessage={errorMessage}
+      errorMessage={effectiveErrorMessage}
       primaryActionLabel={
-        status === "loading"
+        effectiveStatus === "loading"
           ? "Verifying..."
-          : status === "success"
+          : effectiveStatus === "success"
             ? "Go to Dashboard"
             : "Go to Sign In"
       }
       onPrimaryAction={() => {
-        if (status === "loading") {
+        if (effectiveStatus === "loading") {
           return;
         }
-        router.push(status === "success" ? "/" : "/auth/signin");
+        router.push(effectiveStatus === "success" ? "/" : "/auth/signin");
       }}
     />
   );

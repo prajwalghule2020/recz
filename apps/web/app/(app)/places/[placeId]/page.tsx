@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon, MapPinIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { fetchPlace, type Photo } from "@/lib/api";
@@ -30,7 +31,7 @@ export default function PlaceDetailPage() {
     return (
       <div className="page-container">
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading…</p>
         </div>
       </div>
@@ -49,7 +50,12 @@ export default function PlaceDetailPage() {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h1 className="page-title">📍 {place.name}</h1>
+          <h1 className="page-title">
+            <span className="inline-flex items-center gap-2">
+              <MapPinIcon className="h-5 w-5" aria-hidden="true" />
+              {place.name}
+            </span>
+          </h1>
           <p className="page-subtitle">
             {place.country} · {place.photo_count} photo{place.photo_count !== 1 ? "s" : ""} · ({place.lat.toFixed(4)}, {place.lon.toFixed(4)})
           </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { CameraIcon, Trash2Icon, UserIcon } from "lucide-react";
 import { useState } from "react";
 import ImageThumbnail from "./ImageThumbnail";
 import Lightbox from "./Lightbox";
@@ -24,7 +25,7 @@ export default function PhotoGrid({ photos, onPhotoClick, onPhotoDelete, emptyMe
   if (!photos.length) {
     return (
       <div className="photo-grid-empty">
-        <span style={{ fontSize: 48, opacity: 0.3 }}>📷</span>
+        <CameraIcon className="h-12 w-12 text-(--text-muted)" style={{ opacity: 0.3 }} aria-hidden="true" />
         <p style={{ color: "var(--text-muted)", marginTop: 12 }}>
           {emptyMessage ?? "No photos found"}
         </p>
@@ -51,8 +52,9 @@ export default function PhotoGrid({ photos, onPhotoClick, onPhotoDelete, emptyMe
           >
             <ImageThumbnail jobId={photo.job_id} />
             {photo.face_count != null && photo.face_count > 0 && (
-              <div className="photo-grid-badge">
-                👤 {photo.face_count}
+              <div className="photo-grid-badge flex items-center gap-1">
+                <UserIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{photo.face_count}</span>
               </div>
             )}
             {photo.datetime_original && (
@@ -71,7 +73,7 @@ export default function PhotoGrid({ photos, onPhotoClick, onPhotoDelete, emptyMe
                 }}
                 title="Delete Photo"
               >
-                🗑️
+                <Trash2Icon className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
           </div>

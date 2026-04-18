@@ -1,5 +1,6 @@
 "use client";
 
+import { UserIcon } from "lucide-react";
 import Link from "next/link";
 import FaceAvatar from "./FaceAvatar";
 import type { Person } from "../../lib/api";
@@ -24,7 +25,9 @@ export default function PersonCard({ person }: Props) {
             alt={person.name ?? "Unknown person"}
           />
         ) : (
-          <div className="person-card-placeholder">👤</div>
+          <div className="person-card-placeholder">
+            <UserIcon className="h-7 w-7 text-(--text-muted)" aria-hidden="true" />
+          </div>
         )}
       </div>
       <div className="person-card-info">

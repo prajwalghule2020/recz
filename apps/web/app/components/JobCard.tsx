@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Clock3Icon, MapPinIcon, UserIcon, type LucideIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 export type JobStatus = "queued" | "pending" | "processing" | "done" | "failed";
 
@@ -90,13 +91,13 @@ export function JobCard({ job }: JobCardProps) {
         {job.status === "done" && (
           <div style={{ marginTop: 8, display: "flex", gap: 16, flexWrap: "wrap" }}>
             {job.face_count !== undefined && (
-              <Chip icon="👤" label={`${job.face_count} face${job.face_count !== 1 ? "s" : ""}`} />
+              <Chip Icon={UserIcon} label={`${job.face_count} face${job.face_count !== 1 ? "s" : ""}`} />
             )}
             {job.datetime_original && (
-              <Chip icon="🕐" label={new Date(job.datetime_original).toLocaleDateString()} />
+              <Chip Icon={Clock3Icon} label={new Date(job.datetime_original).toLocaleDateString()} />
             )}
             {job.gps_lat !== null && job.gps_lat !== undefined && (
-              <Chip icon="📍" label={`${job.gps_lat?.toFixed(3)}, ${job.gps_lon?.toFixed(3)}`} />
+              <Chip Icon={MapPinIcon} label={`${job.gps_lat?.toFixed(3)}, ${job.gps_lon?.toFixed(3)}`} />
             )}
           </div>
         )}
@@ -109,7 +110,7 @@ export function JobCard({ job }: JobCardProps) {
   );
 }
 
-function Chip({ icon, label }: { icon: string; label: string }) {
+function Chip({ Icon, label }: { Icon: LucideIcon; label: string }) {
   return (
     <span
       style={{
@@ -118,21 +119,19 @@ function Chip({ icon, label }: { icon: string; label: string }) {
         fontSize: ".75rem", color: "var(--text-muted)",
       }}
     >
-      {icon} {label}
+      <Icon size={14} aria-hidden="true" /> {label}
     </span>
   );
-}
-
-interface JobListProps {
-  jobs: Job[];
-  onUpdate: (jobs: Job[]) => void;
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export function useJobPoller(jobs: Job[], onUpdate: (jobs: Job[]) => void) {
   const ref = useRef(jobs);
-  ref.current = jobs;
+
+  useEffect(() => {
+    ref.current = jobs;
+  }, [jobs]);
 
   useEffect(() => {
     const active = jobs.filter((j) => j.status === "pending" || j.status === "processing" || j.status === "queued");

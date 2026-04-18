@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDaysIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import {
   fetchEvents,
@@ -82,22 +83,32 @@ export default function EventsPage() {
           </p>
         </div>
         <button
-          className="btn-primary"
+          className="btn-primary inline-flex items-center gap-2"
           onClick={handleRecluster}
           disabled={clustering}
         >
-          {clustering ? "⚙️ Grouping…" : "🔄 Re-group"}
+          {clustering ? (
+            <>
+              <Loader2Icon className="h-4 w-4 animate-spin-slow" aria-hidden="true" />
+              Grouping...
+            </>
+          ) : (
+            <>
+              <RefreshCwIcon className="h-4 w-4" aria-hidden="true" />
+              Re-group
+            </>
+          )}
         </button>
       </div>
 
       {loading ? (
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading events…</p>
         </div>
       ) : events.length === 0 ? (
         <div className="page-empty">
-          <span style={{ fontSize: 64, opacity: 0.3 }}>📅</span>
+          <CalendarDaysIcon className="h-16 w-16 text-(--text-muted)" style={{ opacity: 0.3 }} aria-hidden="true" />
           <p>No events detected yet. Upload photos with timestamps to get started.</p>
         </div>
       ) : (

@@ -7,7 +7,6 @@ import gradientImg from '@public/images/ns-img-532.png';
 import appLogo from '@public/logo.svg';
 import Image from 'next/image';
 import Link from 'next/link';
-import ThemeToggle from '../ThemeToggle';
 import FooterDivider from './FooterDivider';
 
 const footerSections = [
@@ -111,7 +110,6 @@ const Footer = ({ className }: { className?: string }) => {
           </RevealAnimation>
         </div>
       </div>
-      <ThemeToggle />
     </footer>
   );
 };

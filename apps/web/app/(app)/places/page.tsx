@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon, MapPinIcon, RefreshCwIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { fetchPlaces, triggerClustering, type PlaceSummary } from "@/lib/api";
 import PlaceCard from "@/app/components/PlaceCard";
@@ -45,22 +46,32 @@ export default function PlacesPage() {
           </p>
         </div>
         <button
-          className="btn-primary"
+          className="btn-primary inline-flex items-center gap-2"
           onClick={handleRecluster}
           disabled={clustering}
         >
-          {clustering ? "⚙️ Grouping…" : "🔄 Re-group"}
+          {clustering ? (
+            <>
+              <Loader2Icon className="h-4 w-4 animate-spin-slow" aria-hidden="true" />
+              Grouping...
+            </>
+          ) : (
+            <>
+              <RefreshCwIcon className="h-4 w-4" aria-hidden="true" />
+              Re-group
+            </>
+          )}
         </button>
       </div>
 
       {loading ? (
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading places…</p>
         </div>
       ) : places.length === 0 ? (
         <div className="page-empty">
-          <span style={{ fontSize: 64, opacity: 0.3 }}>📍</span>
+          <MapPinIcon className="h-16 w-16 text-(--text-muted)" style={{ opacity: 0.3 }} aria-hidden="true" />
           <p>No places detected yet. Upload GPS-tagged photos to get started.</p>
         </div>
       ) : (

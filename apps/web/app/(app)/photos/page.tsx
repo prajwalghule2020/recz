@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { fetchMyPhotos, deletePhoto, type Photo } from "@/lib/api";
 import PhotoGrid from "@/app/components/PhotoGrid";
@@ -48,7 +49,7 @@ export default function PhotosPage() {
 
       {loading ? (
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading photos…</p>
         </div>
       ) : (

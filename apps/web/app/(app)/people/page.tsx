@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon, RefreshCwIcon, UsersIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { fetchPeople, triggerClustering, filterPhotos, type Person } from "@/lib/api";
 import PersonCard from "@/app/components/PersonCard";
@@ -84,24 +85,40 @@ export default function PeoplePage() {
           </p>
         </div>
         <button
-          className="btn-primary"
+          className="btn-primary inline-flex items-center gap-2"
           onClick={handleRecluster}
           disabled={clustering}
         >
-          {clustering ? "⚙️ Clustering…" : "🔄 Re-cluster"}
+          {clustering ? (
+            <>
+              <Loader2Icon className="h-4 w-4 animate-spin-slow" aria-hidden="true" />
+              Clustering...
+            </>
+          ) : (
+            <>
+              <RefreshCwIcon className="h-4 w-4" aria-hidden="true" />
+              Re-cluster
+            </>
+          )}
         </button>
       </div>
 
       {loading ? (
         <div className="page-loading">
-          <span className="animate-spin-slow" style={{ fontSize: 32 }}>⚙️</span>
+          <Loader2Icon className="h-8 w-8 animate-spin-slow" aria-hidden="true" />
           <p>Loading people…</p>
         </div>
       ) : people.length === 0 ? (
         <div className="page-empty">
-          <span className={showAnalyzing ? "animate-spin-slow" : ""} style={{ fontSize: 64, opacity: 0.3 }}>
-            {showAnalyzing ? "⚙️" : "👥"}
-          </span>
+          {showAnalyzing ? (
+            <Loader2Icon
+              className="h-16 w-16 animate-spin-slow text-(--text-muted)"
+              style={{ opacity: 0.3 }}
+              aria-hidden="true"
+            />
+          ) : (
+            <UsersIcon className="h-16 w-16 text-(--text-muted)" style={{ opacity: 0.3 }} aria-hidden="true" />
+          )}
           <p style={{ marginTop: 16 }}>
             {showAnalyzing
               ? "Analyzing your photos and forming clusters... This might take a few moments."

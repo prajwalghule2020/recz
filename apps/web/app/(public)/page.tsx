@@ -1,4 +1,3 @@
-import Blog from '@/components/home/Blog';
 import CTA from '@/components/home/CTA';
 import Features from '@/components/home/Features';
 import FeaturesV2 from '@/components/home/FeaturesV2';
@@ -12,7 +11,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   ...defaultMetadata,
-  title: 'Social Media Marketing || NextSaaS',
+  title: 'Face AI | Home',
 };
 
 const page = () => {

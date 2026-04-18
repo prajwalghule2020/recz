@@ -1,11 +1,26 @@
 "use client";
 
+import {
+  FilterIcon,
+  ImageIcon,
+  Link2Icon,
+  ScanFaceIcon,
+  TriangleAlertIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { useState, useCallback, useRef } from "react";
 import { searchByFaceImage, searchByFacePoint, searchSimilarImages, filterPhotos, type SearchResult, type Photo, type FilterParams } from "@/lib/api";
 import PhotoGrid from "@/app/components/PhotoGrid";
 import ImageThumbnail from "@/app/components/ImageThumbnail";
 
 type SearchMode = "face-upload" | "face-point" | "similar" | "filter";
+
+const SEARCH_MODES: Array<{ key: SearchMode; label: string; icon: LucideIcon }> = [
+  { key: "face-upload", label: "Face Upload", icon: ScanFaceIcon },
+  { key: "face-point", label: "Face ID", icon: Link2Icon },
+  { key: "similar", label: "Similar", icon: ImageIcon },
+  { key: "filter", label: "Filter", icon: FilterIcon },
+];
 
 export default function SearchPage() {
   const [mode, setMode] = useState<SearchMode>("face-upload");
@@ -97,18 +112,16 @@ export default function SearchPage() {
 
       {/* Mode selector */}
       <div className="search-tabs">
-        {([
-          ["face-upload", "🧑 Face Upload"],
-          ["face-point", "🔗 Face ID"],
-          ["similar", "🖼️ Similar"],
-          ["filter", "🔍 Filter"],
-        ] as [SearchMode, string][]).map(([key, label]) => (
+        {SEARCH_MODES.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             className={`search-tab ${mode === key ? "search-tab-active" : ""}`}
             onClick={() => setMode(key)}
           >
-            {label}
+            <span className="inline-flex items-center gap-2">
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+            </span>
           </button>
         ))}
       </div>
@@ -182,7 +195,12 @@ export default function SearchPage() {
       </div>
 
       {error && (
-        <div className="search-error">⚠ {error}</div>
+        <div className="search-error">
+          <span className="inline-flex items-center gap-2">
+            <TriangleAlertIcon className="h-4 w-4" aria-hidden="true" />
+            {error}
+          </span>
+        </div>
       )}
 
       {/* Results */}

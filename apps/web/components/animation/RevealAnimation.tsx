@@ -4,7 +4,7 @@ import Springer from '@/utils/springer';
 import { useGSAP } from '@gsap/react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import React, { ReactElement, Ref, cloneElement, useEffect, useRef, useState } from 'react';
+import React, { ReactElement, cloneElement, useId } from 'react';
 
 // Register GSAP plugins
 if (typeof window !== 'undefined') {
@@ -27,6 +27,12 @@ interface RevealAnimationProps {
   className?: string;
 }
 
+type AnimatableChildProps = {
+  className?: string;
+  'data-ns-animate'?: boolean;
+  'data-ns-animate-id'?: string;
+};
+
 const RevealAnimation = ({
   children,
   duration = 0.6,
@@ -42,19 +48,10 @@ const RevealAnimation = ({
   downOnly = false,
   className = '',
 }: RevealAnimationProps) => {
-  const elementRef = useRef<HTMLElement>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const revealId = useId();
 
   useGSAP(() => {
-    if (!isMounted) {
-      return;
-    }
-
-    const element = elementRef.current;
+    const element = document.querySelector<HTMLElement>(`[data-ns-animate-id="${revealId}"]`);
     if (!element) {
       return;
     }
@@ -151,23 +148,20 @@ const RevealAnimation = ({
     } else {
       gsap.from(element, animationProps);
     }
-  }, [isMounted, duration, delay, offset, instant, start, end, direction, useSpring, rotation, animationType, downOnly]);
-
-  // Keep first client render identical to server markup to avoid hydration mismatch.
-  if (!isMounted) {
-    return children;
-  }
+  }, [duration, delay, offset, instant, start, end, direction, useSpring, rotation, animationType, downOnly, revealId]);
 
   // Early return if children is not valid (after all hooks)
   if (!children || !React.isValidElement(children)) {
     return children;
   }
 
-  // Clone the child element and add the ref, className, and data-ns-animate attribute
-  return cloneElement(children as ReactElement<any>, {
-    ref: elementRef,
-    className: cn((children.props as { className?: string })?.className, className),
+  const child = children as ReactElement<AnimatableChildProps>;
+
+  // Clone the child element and add stable markers/class names for animation lookup.
+  return cloneElement(child, {
+    className: cn(child.props.className, className),
     'data-ns-animate': true,
+    'data-ns-animate-id': revealId,
   });
 };
 

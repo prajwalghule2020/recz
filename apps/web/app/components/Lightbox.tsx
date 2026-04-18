@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2Icon, XIcon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { getFullImageUrl } from "../../lib/api";
 
@@ -117,7 +118,7 @@ export default function Lightbox({ jobId, photos, onClose, onNavigate }: Props) 
         onClick={onClose}
         aria-label="Close"
       >
-        ✕
+        <XIcon className="h-5 w-5" aria-hidden="true" />
       </button>
 
       {/* Counter */}
@@ -166,7 +167,7 @@ export default function Lightbox({ jobId, photos, onClose, onNavigate }: Props) 
       >
         {loading ? (
           <div className="lightbox-loading">
-            <span className="animate-spin-slow" style={{ fontSize: 40 }}>⚙️</span>
+            <Loader2Icon className="h-10 w-10 animate-spin-slow" aria-hidden="true" />
           </div>
         ) : src ? (
           /* eslint-disable-next-line @next/next/no-img-element */
